@@ -1,0 +1,18 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+}
+
+body {
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+input, select, textarea {
+  background: white;
+}
+input:focus, select:focus, textarea:focus {
+  outline: 2px solid #0f172a;
+  outline-offset: 0;
+}
