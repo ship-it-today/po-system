@@ -33,11 +33,13 @@ export async function inviteUser(formData: FormData) {
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const full_name = String(formData.get("full_name") ?? "").trim() || null;
   const role = String(formData.get("role") ?? "requester") as Role;
-  if (!email || !email.includes("@")) back({ error: "Enter a valid email address." });
-  if (!ROLES.includes(role)) back({ error: "Invalid role." });
+  // Keep what was typed so the form can be re-filled after an error.
+  const keep = { email, full_name: full_name ?? "", role };
+  if (!email || !email.includes("@")) back({ error: "Enter a valid email address.", ...keep });
+  if (!ROLES.includes(role)) back({ error: "Invalid role.", ...keep });
 
   const admin = createAdminClient();
-  if (!admin) back({ error: "Invites aren't configured yet. Add SUPABASE_SECRET_KEY on Vercel (see README)." });
+  if (!admin) back({ error: "Invites aren't configured yet. Add SUPABASE_SECRET_KEY on Vercel (see README).", ...keep });
 
   const h = await headers();
   const origin = `${h.get("x-forwarded-proto") ?? "https"}://${h.get("x-forwarded-host") ?? h.get("host")}`;
@@ -50,7 +52,7 @@ export async function inviteUser(formData: FormData) {
     const msg = /already|exists|registered/i.test(error.message)
       ? "That email already has an account."
       : error.message;
-    back({ error: msg });
+    back({ error: msg, ...keep });
   }
 
   // The DB trigger created the profile as a requester; bump the role if needed.

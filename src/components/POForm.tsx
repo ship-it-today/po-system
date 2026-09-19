@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { createClient } from "@/lib/supabase/client";
 import {
   CUSTOM_FIELDS,
@@ -45,6 +45,25 @@ export default function POForm({ initial, duplicate = false, payees = [], onSubm
   const [otherCharges, setOtherCharges] = useState<number>(initial?.other_charges ?? 0);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [formKey, setFormKey] = useState(0);
+  const errorRef = useRef<HTMLParagraphElement>(null);
+
+  // Bring the error into view instead of leaving it above the fold.
+  useEffect(() => {
+    if (error) errorRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [error]);
+
+  function clearForm() {
+    if (!window.confirm("Clear everything you've entered on this form?")) return;
+    setItems([emptyItem()]);
+    setTiming("next_run");
+    setReceiptStatus("will_turn_in");
+    setReceiptFile(null);
+    setOtherCharges(0);
+    setError(null);
+    setFormKey((k) => k + 1); // remounts the uncontrolled inputs
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 
   const itemsTotal = items.reduce((s, i) => s + (Number(i.amount) || 0), 0);
   const grandTotal = itemsTotal + (Number(otherCharges) || 0);
@@ -53,7 +72,9 @@ export default function POForm({ initial, duplicate = false, payees = [], onSubm
     setItems((prev) => prev.map((it, i) => (i === idx ? { ...it, ...patch } : it)));
   }
 
-  function handleSubmit(formData: FormData) {
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
     setError(null);
     formData.set("line_items", JSON.stringify(items));
     formData.set("receipt_status", receiptStatus);
@@ -86,9 +107,19 @@ export default function POForm({ initial, duplicate = false, payees = [], onSubm
   const cf = initial?.custom_fields ?? {};
 
   return (
-    <form action={handleSubmit} className="space-y-6">
+    <form key={formKey} onSubmit={handleSubmit} className="space-y-6">
+      <div className="flex items-center justify-between -mb-3">
+        <span className="text-xs text-slate-400">Your entries are kept if something needs fixing.</span>
+        {!editing && (
+          <button type="button" onClick={clearForm} className="text-xs text-slate-400 hover:text-slate-700 underline">
+            Clear form
+          </button>
+        )}
+      </div>
       {error && (
-        <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-md px-3 py-2">{error}</p>
+        <p ref={errorRef} role="alert" className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-md px-3 py-2">
+          {error}
+        </p>
       )}
 
       {/* 1–3 */}

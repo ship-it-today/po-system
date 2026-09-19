@@ -14,10 +14,10 @@ type AuthInfo = { lastSignIn: string | null; invitedAt: string | null; banned: b
 export default async function UsersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; saved?: string }>;
+  searchParams: Promise<{ error?: string; saved?: string; email?: string; full_name?: string; role?: string }>;
 }) {
   const admin = await requireRole(["admin"]);
-  const { error, saved } = await searchParams;
+  const { error, saved, email: keepEmail, full_name: keepName, role: keepRole } = await searchParams;
   const supabase = await createClient();
 
   const { data } = await supabase.from("profiles").select("*").order("created_at");
@@ -82,15 +82,15 @@ export default async function UsersPage({
             <form action={inviteUser} className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
               <label className="block sm:col-span-5">
                 <span className="block text-xs font-medium text-slate-600 mb-1">Email</span>
-                <input name="email" type="email" required className={inputCls} placeholder="name@example.com" />
+                <input name="email" type="email" required defaultValue={keepEmail ?? ""} className={inputCls} placeholder="name@example.com" />
               </label>
               <label className="block sm:col-span-3">
                 <span className="block text-xs font-medium text-slate-600 mb-1">Name (optional)</span>
-                <input name="full_name" className={inputCls} />
+                <input name="full_name" defaultValue={keepName ?? ""} className={inputCls} />
               </label>
               <label className="block sm:col-span-2">
                 <span className="block text-xs font-medium text-slate-600 mb-1">Role</span>
-                <select name="role" defaultValue="requester" className={`${inputCls} capitalize`}>
+                <select name="role" defaultValue={keepRole ?? "requester"} className={`${inputCls} capitalize`}>
                   {ROLES.map((r) => (
                     <option key={r} value={r}>
                       {r}
