@@ -1,3 +1,4 @@
+import Link from "next/link";
 import AppShell from "@/components/AppShell";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -12,10 +13,10 @@ const ROLE_HELP: Record<string, string> = {
 export default async function AccountPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; saved?: string }>;
+  searchParams: Promise<{ error?: string; saved?: string; welcome?: string }>;
 }) {
   const profile = await requireProfile();
-  const { error, saved } = await searchParams;
+  const { error, saved, welcome } = await searchParams;
   const supabase = await createClient();
 
   const [{ count: total }, { count: pending }] = await Promise.all([
@@ -37,6 +38,13 @@ export default async function AccountPage({
   return (
     <AppShell profile={profile}>
       <h1 className="text-xl font-semibold mb-6">Account</h1>
+
+      {welcome && (
+        <p className="mb-4 text-sm text-slate-800 bg-slate-100 border border-slate-200 rounded-md px-3 py-2">
+          Welcome! Please set a password below so you can sign in next time. Then head to{" "}
+          <Link href="/" className="underline">New PO</Link> to submit your first request.
+        </p>
+      )}
 
       {error && (
         <p className="mb-4 text-sm text-red-700 bg-red-50 border border-red-200 rounded-md px-3 py-2">{error}</p>

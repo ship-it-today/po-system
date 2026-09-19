@@ -1,4 +1,5 @@
 import { signInWithGoogle, signInWithPassword } from "./actions";
+import HashSession from "./HashSession";
 
 export default async function LoginPage({
   searchParams,
@@ -20,6 +21,7 @@ export default async function LoginPage({
       <div className="w-full max-w-sm bg-white rounded-xl shadow-sm border border-slate-200 p-8">
         <h1 className="text-2xl font-semibold text-slate-900">Purchase Orders</h1>
         <p className="text-sm text-slate-500 mt-1">Sign in to continue</p>
+        <HashSession />
 
         {errorText && (
           <p className="mt-4 text-sm text-red-700 bg-red-50 border border-red-200 rounded-md px-3 py-2">

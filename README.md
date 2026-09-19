@@ -37,10 +37,10 @@ Still to do if you haven't yet: left sidebar → **SQL Editor** → **New query*
 1. **Authentication → Sign In / Providers** → make sure **Email** is enabled (it is by default).
 2. Optional but recommended: in the Email provider settings, turn off **Allow new users to sign up** so only invited people get accounts. The app has no public sign-up form either way.
 3. **Authentication → URL Configuration** (do this after step 4 gives you your Vercel URL):
-   - Site URL: your Vercel URL, e.g. `https://po-system.vercel.app`
-   - Redirect URLs: add `https://po-system.vercel.app/**` and `http://localhost:3000/**`
+   - Site URL: `https://po-system-woad.vercel.app`
+   - Redirect URLs: add `https://po-system-woad.vercel.app/**` and `http://localhost:3000/**`
 
-   Set this *before* inviting anyone — invite emails link to the Site URL.
+   Set this *before* inviting anyone — every email link is built from the Site URL. If it's still `localhost:3000`, invite links will fail with "localhost refused to connect".
 
 Google sign-in is optional and can be added any time; see **Adding Google sign-in later** at the bottom.
 
@@ -63,11 +63,31 @@ Google sign-in is optional and can be added any time; see **Adding Google sign-i
    ```
 4. Reload the app. You'll now see **Approvals** and **Users** in the nav. From **Users** you can promote anyone else — everyone starts as a requester.
 
-### Adding users
+### Adding users (from inside the app)
 
-Supabase → **Authentication → Users → Invite user**. They get an email with a link to set a password, then appear on your **Users** page as a requester; promote to approver or admin there.
+The **Users** page has an *Invite someone* form. To turn it on, the app needs your Supabase **secret** key as a server-only setting:
 
-If you'd rather not rely on email delivery, use **Add user → Create new user** with a temporary password and tick *Auto confirm user*, then tell them the password.
+1. Supabase → **Project Settings → API Keys** → copy the **Secret key** (`sb_secret_…`).
+2. Vercel → your project → **Settings → Environment Variables** → add:
+   - Key: `SUPABASE_SECRET_KEY`  Value: the secret key
+   Leave all environments checked. (No `NEXT_PUBLIC_` prefix — that's what keeps it off the browser.)
+3. **Deployments → ⋯ → Redeploy** so the new variable is picked up.
+4. Supabase → **Authentication → URL Configuration** → make sure your Vercel URL with `/**` is in **Redirect URLs** (e.g. `https://po-system-woad.vercel.app/**`). Invite links won't work without this.
+
+Invited people get an email, click the link, land on their Account page to set a password, and show as *Invited* on the Users page until they've signed in (with a *Resend* link). You can pick their role at invite time.
+
+Without the secret key the form is replaced by a link to the Supabase dashboard, where **Authentication → Users → Invite user** does the same thing.
+
+**Email templates (recommended):** Supabase's default email links work, but the nicest experience is to point them at the app's confirm page. In Supabase → **Authentication → Email Templates**, edit these templates and replace the link (`{{ .ConfirmationURL }}`) with the value shown:
+
+| Template | Link to use |
+|---|---|
+| Invite user | `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=invite` |
+| Reset password | `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery` |
+| Magic link | `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=magiclink` |
+| Confirm signup | `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email` |
+
+**Email limits:** Supabase's built-in mailer allows only a few emails per hour, which is fine for occasional invites. If you'll invite many people at once, set up a custom SMTP provider under Authentication → SMTP Settings (Resend and Brevo have free tiers).
 
 ### Adding Google sign-in later
 
