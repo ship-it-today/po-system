@@ -2,62 +2,153 @@ import Link from "next/link";
 import StatusBadge from "./StatusBadge";
 import type { PurchaseOrder } from "@/lib/types";
 import { displayName, formatMoney } from "@/lib/types";
+import { PAGE_SIZE, SORT_COLUMNS, toQuery, type ListParams, type SortKey } from "@/lib/po-query";
 
 export default function POTable({
   orders,
+  total,
+  params,
+  basePath,
   showRequester = false,
   emptyText = "No purchase orders yet.",
 }: {
   orders: PurchaseOrder[];
+  total: number;
+  params: ListParams;
+  basePath: string;
   showRequester?: boolean;
   emptyText?: string;
 }) {
-  if (orders.length === 0) {
+  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const start = total === 0 ? 0 : (params.page - 1) * PAGE_SIZE + 1;
+  const end = Math.min(total, params.page * PAGE_SIZE);
+
+  const sortHref = (key: SortKey) => {
+    const dir = params.sort === key && params.dir === "asc" ? "desc" : params.sort === key ? "asc" : key === "created_at" || key === "total" ? "desc" : "asc";
+    return basePath + toQuery({ ...params, sort: key, dir, page: 1 });
+  };
+  const pageHref = (page: number) => basePath + toQuery({ ...params, page });
+
+  const Th = ({ k, right }: { k: SortKey; right?: boolean }) => {
+    const activeSort = params.sort === k;
     return (
-      <div className="rounded-lg border border-dashed border-slate-300 p-10 text-center text-sm text-slate-500">
-        {emptyText}
-      </div>
+      <th className={`px-4 py-2.5 ${right ? "text-right" : ""}`}>
+        <Link
+          href={sortHref(k)}
+          className={`inline-flex items-center gap-1 hover:text-slate-900 ${activeSort ? "text-slate-900" : ""}`}
+        >
+          {SORT_COLUMNS[k]}
+          <span className="text-[10px]">{activeSort ? (params.dir === "asc" ? "▲" : "▼") : "↕"}</span>
+        </Link>
+      </th>
     );
-  }
+  };
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
-      <table className="min-w-full text-sm">
-        <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
-          <tr>
-            <th className="px-4 py-2.5">PO #</th>
-            <th className="px-4 py-2.5">Project</th>
-            <th className="px-4 py-2.5">Pay to</th>
-            {showRequester && <th className="px-4 py-2.5">Requester</th>}
-            <th className="px-4 py-2.5">Department</th>
-            <th className="px-4 py-2.5 text-right">Total</th>
-            <th className="px-4 py-2.5">Status</th>
-            <th className="px-4 py-2.5">Submitted</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-slate-100">
-          {orders.map((po) => (
-            <tr key={po.id} className="hover:bg-slate-50">
-              <td className="px-4 py-2.5 font-medium">
-                <Link href={`/po/${po.id}`} className="text-slate-900 hover:underline">
-                  PO-{po.po_number}
-                </Link>
-              </td>
-              <td className="px-4 py-2.5">{po.project_name || <span className="text-slate-400">—</span>}</td>
-              <td className="px-4 py-2.5 text-slate-600">{po.pay_to}</td>
-              {showRequester && <td className="px-4 py-2.5">{displayName(po.requester)}</td>}
-              <td className="px-4 py-2.5 text-slate-600">{po.department ?? "—"}</td>
-              <td className="px-4 py-2.5 text-right tabular-nums">{formatMoney(po.total)}</td>
-              <td className="px-4 py-2.5">
-                <StatusBadge status={po.status} />
-              </td>
-              <td className="px-4 py-2.5 text-slate-500">
-                {new Date(po.created_at).toLocaleDateString()}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div>
+      {orders.length === 0 ? (
+        <div className="rounded-lg border border-dashed border-slate-300 p-10 text-center text-sm text-slate-500">
+          {emptyText}
+        </div>
+      ) : (
+        <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+          <table className="min-w-full text-sm">
+            <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+              <tr>
+                <Th k="po_number" />
+                <th className="px-4 py-2.5">Project</th>
+                <Th k="pay_to" />
+                {showRequester && <th className="px-4 py-2.5">Requester</th>}
+                <Th k="department" />
+                <Th k="total" right />
+                <Th k="status" />
+                <Th k="created_at" />
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {orders.map((po) => (
+                <tr key={po.id} className="hover:bg-slate-50">
+                  <td className="px-4 py-2.5 font-medium">
+                    <Link href={`/po/${po.id}`} className="text-slate-900 hover:underline">
+                      PO-{po.po_number}
+                    </Link>
+                  </td>
+                  <td className="px-4 py-2.5">{po.project_name || <span className="text-slate-400">—</span>}</td>
+                  <td className="px-4 py-2.5 text-slate-600">{po.pay_to}</td>
+                  {showRequester && <td className="px-4 py-2.5">{displayName(po.requester)}</td>}
+                  <td className="px-4 py-2.5 text-slate-600">{po.department ?? "—"}</td>
+                  <td className="px-4 py-2.5 text-right tabular-nums">{formatMoney(po.total)}</td>
+                  <td className="px-4 py-2.5">
+                    <StatusBadge status={po.status} />
+                  </td>
+                  <td className="px-4 py-2.5 text-slate-500">{new Date(po.created_at).toLocaleDateString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-sm text-slate-500">
+        <span>
+          {total === 0 ? "No results" : `Showing ${start}–${end} of ${total}`}
+        </span>
+        {pages > 1 && (
+          <nav className="flex items-center gap-1">
+            <PageLink href={pageHref(params.page - 1)} disabled={params.page <= 1}>
+              ← Prev
+            </PageLink>
+            {pageNumbers(params.page, pages).map((n, i) =>
+              n === null ? (
+                <span key={`gap-${i}`} className="px-1">
+                  …
+                </span>
+              ) : (
+                <PageLink key={n} href={pageHref(n)} current={n === params.page}>
+                  {n}
+                </PageLink>
+              )
+            )}
+            <PageLink href={pageHref(params.page + 1)} disabled={params.page >= pages}>
+              Next →
+            </PageLink>
+          </nav>
+        )}
+      </div>
     </div>
   );
+}
+
+function PageLink({
+  href,
+  disabled,
+  current,
+  children,
+}: {
+  href: string;
+  disabled?: boolean;
+  current?: boolean;
+  children: React.ReactNode;
+}) {
+  const cls = `rounded-md px-2.5 py-1 text-sm ${
+    current ? "bg-slate-900 text-white" : disabled ? "text-slate-300" : "text-slate-700 hover:bg-slate-100"
+  }`;
+  if (disabled || current) return <span className={cls}>{children}</span>;
+  return (
+    <Link href={href} className={cls}>
+      {children}
+    </Link>
+  );
+}
+
+function pageNumbers(current: number, pages: number): (number | null)[] {
+  if (pages <= 7) return Array.from({ length: pages }, (_, i) => i + 1);
+  const set = new Set([1, pages, current - 1, current, current + 1]);
+  const nums = [...set].filter((n) => n >= 1 && n <= pages).sort((a, b) => a - b);
+  const out: (number | null)[] = [];
+  for (let i = 0; i < nums.length; i++) {
+    if (i > 0 && nums[i] - nums[i - 1] > 1) out.push(null);
+    out.push(nums[i]);
+  }
+  return out;
 }

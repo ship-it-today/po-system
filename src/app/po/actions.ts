@@ -117,7 +117,7 @@ export async function createPO(formData: FormData): Promise<Result> {
   if (liErr) return { error: liErr.message };
 
   revalidatePath("/");
-  redirect(`/po/${po.id}?created=1`);
+  redirect(`/po/${po.id}/submitted`);
 }
 
 export async function updatePO(id: string, formData: FormData): Promise<Result> {

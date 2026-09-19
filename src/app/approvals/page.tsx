@@ -1,36 +1,38 @@
 import Link from "next/link";
 import AppShell from "@/components/AppShell";
+import POFilters from "@/components/POFilters";
 import POTable from "@/components/POTable";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { formatMoney, type POStatus, type PurchaseOrder } from "@/lib/types";
+import { parseListParams, queryPOs, toQuery, type RawSearchParams } from "@/lib/po-query";
+import { displayName, formatMoney, type POStatus, type PurchaseOrder } from "@/lib/types";
 
-const TABS: { key: POStatus | "all"; label: string }[] = [
+const TABS: { key: POStatus | ""; label: string }[] = [
   { key: "pending", label: "Pending" },
   { key: "approved", label: "Approved" },
   { key: "denied", label: "Denied" },
-  { key: "all", label: "All" },
+  { key: "", label: "All" },
 ];
 
-export default async function ApprovalsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ status?: string }>;
-}) {
+export default async function ApprovalsPage({ searchParams }: { searchParams: Promise<RawSearchParams> }) {
   const profile = await requireRole(["approver", "admin"]);
-  const { status: raw } = await searchParams;
-  const status = (TABS.some((t) => t.key === raw) ? raw : "pending") as POStatus | "all";
+  const raw = await searchParams;
+  // Default to the pending queue, oldest first, unless the URL says otherwise.
+  const hasStatusParam = "status" in raw;
+  const params = parseListParams(raw, {
+    status: hasStatusParam ? "" : "pending",
+    sort: "created_at",
+    dir: !hasStatusParam || raw.status === "pending" ? "asc" : "desc",
+  });
   const supabase = await createClient();
 
-  let query = supabase
-    .from("purchase_orders")
-    .select("*, requester:profiles!purchase_orders_requester_id_fkey(id,email,full_name)")
-    .order("created_at", { ascending: status === "pending" });
-  if (status !== "all") query = query.eq("status", status);
-  const { data } = await query;
-  const orders = (data ?? []) as PurchaseOrder[];
+  const [{ rows, total }, { data: allRows }, { data: people }] = await Promise.all([
+    queryPOs(supabase, params),
+    supabase.from("purchase_orders").select("status, total"),
+    supabase.from("profiles").select("id, email, full_name").order("full_name"),
+  ]);
+  const orders = rows as PurchaseOrder[];
 
-  const { data: allRows } = await supabase.from("purchase_orders").select("status, total");
   const summary = (allRows ?? []).reduce(
     (acc, r) => {
       acc[r.status as POStatus].count += 1;
@@ -39,6 +41,7 @@ export default async function ApprovalsPage({
     },
     { pending: { count: 0, total: 0 }, approved: { count: 0, total: 0 }, denied: { count: 0, total: 0 } }
   );
+  const requesters = (people ?? []).map((p) => ({ id: p.id, label: displayName(p) }));
   const isAdmin = profile.role === "admin";
 
   return (
@@ -51,10 +54,10 @@ export default async function ApprovalsPage({
       <div className="flex gap-1 mb-4 border-b border-slate-200">
         {TABS.map((t) => (
           <Link
-            key={t.key}
+            key={t.key || "all"}
             href={`/approvals?status=${t.key}`}
             className={`px-3 py-2 text-sm -mb-px border-b-2 ${
-              status === t.key
+              params.status === t.key
                 ? "border-slate-900 text-slate-900 font-medium"
                 : "border-transparent text-slate-500 hover:text-slate-800"
             }`}
@@ -63,11 +66,24 @@ export default async function ApprovalsPage({
           </Link>
         ))}
       </div>
+      <POFilters basePath="/approvals" params={params} requesters={requesters} />
       <POTable
         orders={orders}
+        total={total}
+        params={params}
+        basePath="/approvals"
         showRequester
-        emptyText={status === "pending" ? "Nothing waiting for approval." : "No purchase orders here."}
+        emptyText={params.status === "pending" && !params.q ? "Nothing waiting for approval." : "No purchase orders match these filters."}
       />
+      {total > 0 && (
+        <p className="mt-2 text-xs text-slate-400">
+          Tip: bookmark a filtered view, e.g.{" "}
+          <Link href={`/approvals${toQuery({ status: "approved", sort: "total", dir: "desc" })}`} className="underline">
+            approved, largest first
+          </Link>
+          .
+        </p>
+      )}
     </AppShell>
   );
 }

@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { adminInvitesEnabled, createAdminClient } from "@/lib/supabase/admin";
 import { ROLES, type Profile } from "@/lib/types";
 import { deleteUser, inviteUser, removeUser, resendInvite, restoreUser, setRole } from "./actions";
-import ConfirmButton from "./ConfirmButton";
+import DangerConfirm from "./DangerConfirm";
 
 const inputCls = "w-full rounded-md border border-slate-300 px-3 py-2 text-sm";
 const btnCls = "rounded-md border px-2.5 py-1 text-xs font-medium";
@@ -201,12 +201,13 @@ export default async function UsersPage({
                         {!isMe && !removed && (
                           <form action={removeUser}>
                             <input type="hidden" name="id" value={u.id} />
-                            <ConfirmButton
-                              message={`Remove access for ${u.email}? They won't be able to sign in. Their purchase orders are kept and you can restore them later.`}
+                            <DangerConfirm
+                              label="Remove access"
+                              title={`Remove access for ${u.full_name ?? u.email}?`}
+                              description={`${u.email} will be signed out and won't be able to sign in again.\n\nTheir purchase orders and approvals are kept, and you can restore access later.`}
+                              confirmLabel="Remove access"
                               className={`${btnCls} border-amber-300 bg-white text-amber-800 hover:bg-amber-50`}
-                            >
-                              Remove access
-                            </ConfirmButton>
+                            />
                           </form>
                         )}
                         {!isMe && removed && (
@@ -220,12 +221,14 @@ export default async function UsersPage({
                         {!isMe && !hasPOs && (
                           <form action={deleteUser}>
                             <input type="hidden" name="id" value={u.id} />
-                            <ConfirmButton
-                              message={`Permanently delete ${u.email}? This can't be undone.`}
+                            <DangerConfirm
+                              label="Delete"
+                              title={`Permanently delete ${u.full_name ?? u.email}?`}
+                              description={`This deletes the account for ${u.email}. It cannot be undone.\n\nIf you only want to stop them signing in, use Remove access instead.`}
+                              confirmLabel="Delete permanently"
+                              typeToConfirm={u.email}
                               className={`${btnCls} border-red-300 bg-white text-red-700 hover:bg-red-50`}
-                            >
-                              Delete
-                            </ConfirmButton>
+                            />
                           </form>
                         )}
                       </div>

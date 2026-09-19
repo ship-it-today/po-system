@@ -127,6 +127,12 @@ export async function deleteUser(formData: FormData) {
   if (id === me.id) back({ error: "You can't delete yourself." });
   const admin = await adminOrBack();
 
+  // Second check on the server: the typed confirmation must match the account's email.
+  const typed = String(formData.get("confirm") ?? "").trim().toLowerCase();
+  const { data: target } = await admin.from("profiles").select("email").eq("id", id).maybeSingle();
+  if (!target) back({ error: "User not found." });
+  if (typed !== target.email.toLowerCase()) back({ error: "Confirmation text didn't match the email. Nothing was deleted." });
+
   const { count } = await admin
     .from("purchase_orders")
     .select("id", { count: "exact", head: true })

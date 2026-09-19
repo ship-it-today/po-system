@@ -29,6 +29,11 @@ export default function AppShell({
                 {profile.role === "admin" ? "All POs" : "Approvals"}
               </Link>
             )}
+            {canApprove(profile.role) && (
+              <Link href="/reports" className="text-slate-600 hover:text-slate-900">
+                Reports
+              </Link>
+            )}
             {profile.role === "admin" && (
               <Link href="/admin/users" className="text-slate-600 hover:text-slate-900">
                 Users
