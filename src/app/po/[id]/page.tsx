@@ -69,14 +69,21 @@ export default async function PODetailPage({
             <StatusBadge status={po.status} />
           </div>
           <p className="text-sm text-slate-500 mt-1">
-            {po.project_name} · {po.department}
+            {[po.project_name, po.department].filter(Boolean).join(" · ")}
           </p>
           <p className="text-sm text-slate-500">
             Submitted by {displayName(po.requester)} on {new Date(po.created_at).toLocaleString()}
           </p>
         </div>
-        {canEdit && (
-          <div className="flex gap-2">
+        <div className="flex gap-2">
+          <Link
+            href={`/po/${po.id}/print`}
+            className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm hover:bg-slate-50"
+          >
+            Print
+          </Link>
+          {canEdit && (
+            <>
             <Link
               href={`/po/${po.id}/edit`}
               className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm hover:bg-slate-50"
@@ -88,8 +95,9 @@ export default async function PODetailPage({
                 Withdraw
               </button>
             </form>
-          </div>
-        )}
+            </>
+          )}
+        </div>
       </div>
 
       {po.status !== "pending" && (

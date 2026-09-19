@@ -6,14 +6,28 @@
  * and stored as real columns (see supabase/schema.sql).
  */
 
+/** Shown at the top of printed purchase orders. */
+export const ORG_NAME = "Calvary Vista";
+
 export const DEPARTMENTS = [
   "Church",
   "Coffee House",
   "D&A Ministry",
   "Family Ministry",
   "Facilities",
-  "HS Ministry",
-  "Jr. High Ministry",
+  "High School Min",
+  "Jr High Ministry",
+  "Kid's Ministry",
+  "Local Outreach",
+  "Media/Tech",
+  "Men's Ministry",
+  "Missions",
+  "Spanish Ministry",
+  "Women's Ministry",
+  "Worship Ministry",
+  "AHG",
+  "Trail Life",
+  "Other",
 ] as const;
 
 export const PAYMENT_TIMING = [
@@ -24,7 +38,7 @@ export const PAYMENT_TIMING = [
 
 export const PAYMENT_METHODS = [
   { value: "check_request", label: "Check request" },
-  { value: "credit_card", label: "Credit card" },
+  { value: "credit_card", label: "Church credit card" },
   { value: "on_account", label: "On account" },
 ] as const;
 

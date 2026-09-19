@@ -43,7 +43,7 @@ export default function POTable({
                   PO-{po.po_number}
                 </Link>
               </td>
-              <td className="px-4 py-2.5">{po.project_name}</td>
+              <td className="px-4 py-2.5">{po.project_name || <span className="text-slate-400">—</span>}</td>
               <td className="px-4 py-2.5 text-slate-600">{po.pay_to}</td>
               {showRequester && <td className="px-4 py-2.5">{displayName(po.requester)}</td>}
               <td className="px-4 py-2.5 text-slate-600">{po.department ?? "—"}</td>

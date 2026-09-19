@@ -25,7 +25,7 @@ export type PurchaseOrder = {
   status: POStatus;
 
   department: string;
-  project_name: string;
+  project_name: string | null;
   payment_timing: PaymentTiming;
   needed_by: string | null;
 

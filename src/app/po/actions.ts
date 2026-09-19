@@ -20,8 +20,7 @@ function parseForm(formData: FormData) {
   const department = str(formData, "department");
   if (!(DEPARTMENTS as readonly string[]).includes(department)) return { error: "Please choose a department." } as const;
 
-  const project_name = str(formData, "project_name");
-  if (!project_name) return { error: "Project name is required." } as const;
+  const project_name = optStr(formData, "project_name");
 
   const payment_timing = str(formData, "payment_timing");
   if (!PAYMENT_TIMING.some((o) => o.value === payment_timing)) return { error: "Please choose when payment is needed." } as const;

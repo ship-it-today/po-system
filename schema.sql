@@ -63,7 +63,7 @@ create table public.purchase_orders (
 
   -- 1–3
   department      text not null,
-  project_name    text not null,
+  project_name    text,
   payment_timing  text not null default 'next_run'
                   check (payment_timing in ('next_run', 'asap', 'by_date')),
   needed_by       date,
@@ -158,6 +158,11 @@ alter table public.po_line_items   enable row level security;
 -- users can edit their own name; only admins can change roles.
 create policy "profiles: read" on public.profiles
   for select to authenticated using (true);
+
+-- Lets the app create a profile for a user who signed up before the trigger existed.
+create policy "profiles: create own" on public.profiles
+  for insert to authenticated
+  with check (id = auth.uid() and role = 'requester');
 
 create policy "profiles: update own name" on public.profiles
   for update to authenticated

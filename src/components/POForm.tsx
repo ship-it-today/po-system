@@ -89,8 +89,8 @@ export default function POForm({ initial, onSubmit }: Props) {
               ))}
             </select>
           </Field>
-          <Field label="Project name" required>
-            <input name="project_name" required defaultValue={initial?.project_name} className={inputCls} />
+          <Field label="Project name">
+            <input name="project_name" defaultValue={initial?.project_name ?? ""} className={inputCls} />
           </Field>
           <Field label="Payment needed" required>
             <div className="flex flex-wrap gap-x-4 gap-y-2 pt-1.5 text-sm">
@@ -233,20 +233,6 @@ export default function POForm({ initial, onSubmit }: Props) {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-5">
-          <Field label="Other charges" help="Shipping, tax, fees">
-            <div className="relative">
-              <span className="absolute left-2.5 top-2 text-sm text-slate-400">$</span>
-              <input
-                name="other_charges"
-                type="number"
-                min="0"
-                step="0.01"
-                value={otherCharges}
-                onChange={(e) => setOtherCharges(Number(e.target.value))}
-                className={`${inputCls} pl-6 text-right`}
-              />
-            </div>
-          </Field>
           <Field label="Payment amount / not to exceed" help="Leave blank to use the total">
             <div className="relative">
               <span className="absolute left-2.5 top-2 text-sm text-slate-400">$</span>
@@ -257,6 +243,20 @@ export default function POForm({ initial, onSubmit }: Props) {
                 step="0.01"
                 defaultValue={initial?.not_to_exceed ?? ""}
                 placeholder={grandTotal.toFixed(2)}
+                className={`${inputCls} pl-6 text-right`}
+              />
+            </div>
+          </Field>
+          <Field label="Other charges" help="Shipping, tax, fees">
+            <div className="relative">
+              <span className="absolute left-2.5 top-2 text-sm text-slate-400">$</span>
+              <input
+                name="other_charges"
+                type="number"
+                min="0"
+                step="0.01"
+                value={otherCharges}
+                onChange={(e) => setOtherCharges(Number(e.target.value))}
                 className={`${inputCls} pl-6 text-right`}
               />
             </div>

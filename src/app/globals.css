@@ -16,3 +16,8 @@ input:focus, select:focus, textarea:focus {
   outline: 2px solid #0f172a;
   outline-offset: 0;
 }
+
+@media print {
+  @page { margin: 0.6in; }
+  body { background: white; }
+}
