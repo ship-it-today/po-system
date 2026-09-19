@@ -58,6 +58,7 @@ export type PurchaseOrder = {
   decided_at: string | null;
   created_at: string;
   updated_at: string;
+  deleted_at: string | null;
 
   line_items?: LineItem[];
   requester?: Pick<Profile, "id" | "email" | "full_name"> | null;
@@ -80,7 +81,7 @@ export function displayName(p?: Pick<Profile, "email" | "full_name"> | null) {
   return p.full_name || p.email;
 }
 
-export type ActivityKind = "comment" | "submitted" | "edited" | "approved" | "denied";
+export type ActivityKind = "comment" | "submitted" | "edited" | "approved" | "denied" | "trashed" | "restored";
 export type Activity = {
   id: string;
   po_id: string;

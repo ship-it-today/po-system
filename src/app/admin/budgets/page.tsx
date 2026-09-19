@@ -25,6 +25,7 @@ export default async function BudgetsPage({
       .select("department, status, total")
       .gte("created_at", `${year}-01-01T00:00:00`)
       .lt("created_at", `${year + 1}-01-01T00:00:00`)
+      .is("deleted_at", null)
       .in("status", ["approved", "pending"]),
   ]);
   const budgetOf = new Map((budgets ?? []).map((b) => [b.department, Number(b.amount)]));

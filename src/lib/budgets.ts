@@ -11,6 +11,7 @@ export async function departmentBudgetStatus(supabase: SupabaseClient, departmen
       .eq("department", department)
       .gte("created_at", start)
       .lt("created_at", end)
+      .is("deleted_at", null)
       .in("status", ["approved", "pending"]),
     supabase.from("department_budgets").select("amount").eq("department", department).eq("fiscal_year", year).maybeSingle(),
   ]);

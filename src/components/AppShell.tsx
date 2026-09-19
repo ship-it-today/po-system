@@ -45,6 +45,11 @@ export default function AppShell({ profile, children }: { profile: Profile; chil
                   Budgets
                 </Link>
               )}
+              {admin && (
+                <Link href="/admin/trash" className="text-slate-600 hover:text-slate-900">
+                  Trash
+                </Link>
+              )}
             </span>
           </nav>
           <div className="hidden md:flex items-center gap-3 text-sm">

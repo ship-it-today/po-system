@@ -12,6 +12,9 @@ import { CUSTOM_FIELDS, DELIVERY_OPTIONS, PAYMENT_METHODS, PAYMENT_TIMING, label
 import type { Activity, PurchaseOrder } from "@/lib/types";
 import { canApprove, displayName, formatMoney } from "@/lib/types";
 import { decidePO, deletePO } from "../actions";
+import { purgePOs, restorePOs, trashPOs } from "@/app/admin/trash/actions";
+import DangerConfirm from "@/app/admin/users/DangerConfirm";
+import { daysLeft, TRASH_DAYS } from "@/lib/trash";
 
 export default async function PODetailPage({
   params,
@@ -44,7 +47,10 @@ export default async function PODetailPage({
 
   const isOwner = po.requester_id === profile.id;
   const canEdit = isOwner && po.status === "pending";
-  const canDecide = canApprove(profile.role) && po.status === "pending";
+  const canDecide = canApprove(profile.role) && po.status === "pending" && !po.deleted_at;
+  const isAdmin = profile.role === "admin";
+  const inTrash = Boolean(po.deleted_at);
+  const btn = "rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm hover:bg-slate-50";
 
   const year = new Date(po.created_at).getFullYear();
   const [{ data: activityRows }, budget] = await Promise.all([
@@ -110,7 +116,20 @@ export default async function PODetailPage({
           >
             Print
           </Link>
-          {canEdit && (
+          {isAdmin && !inTrash && (
+            <form action={trashPOs}>
+              <input type="hidden" name="id" value={po.id} />
+              <input type="hidden" name="return_to" value="/approvals?status=" />
+              <DangerConfirm
+                label="Move to Trash"
+                title={`Move PO-${po.po_number} to the Trash?`}
+                description={`It will disappear from all lists and reports. You can restore it from the Trash for ${TRASH_DAYS} days; after that it's deleted automatically.`}
+                confirmLabel="Move to Trash"
+                className="rounded-md border border-red-200 bg-white px-3 py-1.5 text-sm text-red-700 hover:bg-red-50"
+              />
+            </form>
+          )}
+          {canEdit && !inTrash && (
             <>
             <Link
               href={`/po/${po.id}/edit`}
@@ -127,6 +146,38 @@ export default async function PODetailPage({
           )}
         </div>
       </div>
+
+      {inTrash && po.deleted_at && (
+        <section className="mb-6 rounded-lg border border-amber-200 bg-amber-50 p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="font-semibold text-amber-900">This PO is in the Trash</h2>
+              <p className="text-sm text-amber-800 mt-0.5">
+                Moved on {new Date(po.deleted_at).toLocaleDateString()} ·{" "}
+                {daysLeft(po.deleted_at) === 0 ? "will be deleted today" : `deleted automatically in ${daysLeft(po.deleted_at)} days`}.
+                Only admins can see it here.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <form action={restorePOs}>
+                <input type="hidden" name="id" value={po.id} />
+                <input type="hidden" name="return_to" value={`/po/${po.id}`} />
+                <button className={btn}>Restore</button>
+              </form>
+              <form action={purgePOs}>
+                <input type="hidden" name="id" value={po.id} />
+                <DangerConfirm
+                  label="Delete Permanently"
+                  title={`Delete PO-${po.po_number} for good?`}
+                  description="This removes the PO, its line items, comments and receipt. It cannot be undone."
+                  confirmLabel="Delete Permanently"
+                  className="rounded-md border border-red-300 bg-white px-3 py-1.5 text-sm text-red-700 hover:bg-red-50"
+                />
+              </form>
+            </div>
+          </div>
+        </section>
+      )}
 
       {po.status !== "pending" && (
         <section

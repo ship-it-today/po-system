@@ -14,7 +14,7 @@ export default async function HistoryPage({ searchParams }: { searchParams: Prom
 
   const [{ rows, total }, { data: allMine }] = await Promise.all([
     queryPOs(supabase, params, { requesterId: profile.id }),
-    supabase.from("purchase_orders").select("status").eq("requester_id", profile.id),
+    supabase.from("purchase_orders").select("status").eq("requester_id", profile.id).is("deleted_at", null),
   ]);
   const orders = rows as PurchaseOrder[];
   const counts = { pending: 0, approved: 0, denied: 0 };

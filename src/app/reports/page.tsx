@@ -38,7 +38,7 @@ export default async function ReportsPage({
   const now = new Date();
 
   const [{ data: firstRow }, { data: people }] = await Promise.all([
-    supabase.from("purchase_orders").select("created_at").order("created_at").limit(1).maybeSingle(),
+    supabase.from("purchase_orders").select("created_at").is("deleted_at", null).order("created_at").limit(1).maybeSingle(),
     supabase.from("profiles").select("id, email, full_name").order("full_name"),
   ]);
   const earliest = firstRow ? new Date(firstRow.created_at) : null;
@@ -54,6 +54,7 @@ export default async function ReportsPage({
     .select("status, total, created_at, department, pay_to, payment_method, requester_id")
     .gte("created_at", (params.compare ? prevFrom : params.from).toISOString())
     .lt("created_at", params.to.toISOString())
+    .is("deleted_at", null)
     .order("created_at");
   if (params.department) q = q.eq("department", params.department);
   if (params.requester) q = q.eq("requester_id", params.requester);
@@ -75,6 +76,7 @@ export default async function ReportsPage({
       .from("purchase_orders")
       .select("department, status, total")
       .gte("created_at", `${thisYear}-01-01T00:00:00`)
+      .is("deleted_at", null)
       .in("status", ["approved", "pending"]),
   ]);
   const ytdUsed = new Map<string, { approved: number; pending: number }>();

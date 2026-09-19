@@ -72,11 +72,14 @@ export function toQuery(p: Partial<ListParams>): string {
 export async function queryPOs(
   supabase: SupabaseClient,
   p: ListParams,
-  scope: { requesterId?: string } = {}
+  scope: { requesterId?: string; trashed?: boolean } = {}
 ) {
   let q = supabase
     .from("purchase_orders")
     .select("*, requester:profiles!purchase_orders_requester_id_fkey(id,email,full_name)", { count: "exact" });
+
+  // Trashed POs live only on the Trash page.
+  q = scope.trashed ? q.not("deleted_at", "is", null) : q.is("deleted_at", null);
 
   if (scope.requesterId) q = q.eq("requester_id", scope.requesterId);
   else if (p.requester) q = q.eq("requester_id", p.requester);

@@ -6,6 +6,8 @@ import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { parseListParams, queryPOs, toQuery, type RawSearchParams } from "@/lib/po-query";
 import { displayName, formatMoney, type POStatus, type PurchaseOrder } from "@/lib/types";
+import BulkForm from "@/components/BulkForm";
+import { trashPOs } from "@/app/admin/trash/actions";
 
 const TABS: { key: POStatus | ""; label: string }[] = [
   { key: "pending", label: "Pending" },
@@ -28,7 +30,7 @@ export default async function ApprovalsPage({ searchParams }: { searchParams: Pr
 
   const [{ rows, total }, { data: allRows }, { data: people }] = await Promise.all([
     queryPOs(supabase, params),
-    supabase.from("purchase_orders").select("status, total"),
+    supabase.from("purchase_orders").select("status, total").is("deleted_at", null),
     supabase.from("profiles").select("id, email, full_name").order("full_name"),
   ]);
   const orders = rows as PurchaseOrder[];
@@ -43,6 +45,20 @@ export default async function ApprovalsPage({ searchParams }: { searchParams: Pr
   );
   const requesters = (people ?? []).map((p) => ({ id: p.id, label: displayName(p) }));
   const isAdmin = profile.role === "admin";
+  const { error, saved } = raw as { error?: string; saved?: string };
+  const returnTo = `/approvals${toQuery(params)}`;
+
+  const table = (
+    <POTable
+      orders={orders}
+      total={total}
+      params={params}
+      basePath="/approvals"
+      showRequester
+      selectable={isAdmin}
+      emptyText={params.status === "pending" && !params.q ? "Nothing waiting for approval." : "No purchase orders match these filters."}
+    />
+  );
 
   return (
     <AppShell profile={profile}>
@@ -66,15 +82,26 @@ export default async function ApprovalsPage({ searchParams }: { searchParams: Pr
           </Link>
         ))}
       </div>
+      {error && <p className="mb-4 text-sm text-red-700 bg-red-50 border border-red-200 rounded-md px-3 py-2">{error}</p>}
+      {saved && (
+        <p className="mb-4 text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-md px-3 py-2">
+          {saved} <Link href="/admin/trash" className="underline">Open Trash</Link>
+        </p>
+      )}
       <POFilters basePath="/approvals" params={params} requesters={requesters} />
-      <POTable
-        orders={orders}
-        total={total}
-        params={params}
-        basePath="/approvals"
-        showRequester
-        emptyText={params.status === "pending" && !params.q ? "Nothing waiting for approval." : "No purchase orders match these filters."}
-      />
+      {isAdmin ? (
+        <BulkForm
+          returnTo={returnTo}
+          actions={[{ label: "Move to Trash", action: trashPOs, danger: true, confirm: "Move the selected POs to the Trash? They can be restored for 90 days." }]}
+        >
+          {table}
+        </BulkForm>
+      ) : (
+        table
+      )}
+      {isAdmin && total > 0 && (
+        <p className="mt-2 text-xs text-slate-400">Tick the boxes to select POs (e.g. junk or duplicates), then move them to the Trash in one go.</p>
+      )}
       {total > 0 && (
         <p className="mt-2 text-xs text-slate-400">
           Tip: bookmark a filtered view, e.g.{" "}

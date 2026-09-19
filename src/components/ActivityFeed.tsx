@@ -8,6 +8,8 @@ const VERB: Record<Activity["kind"], string> = {
   approved: "approved this PO",
   denied: "denied this PO",
   comment: "commented",
+  trashed: "moved this PO to the Trash",
+  restored: "restored this PO from the Trash",
 };
 
 export default function ActivityFeed({ poId, items }: { poId: string; items: Activity[] }) {
@@ -20,7 +22,7 @@ export default function ActivityFeed({ poId, items }: { poId: string; items: Act
           <li key={a.id} className="flex gap-3 text-sm">
             <span
               className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${
-                a.kind === "approved" ? "bg-emerald-500" : a.kind === "denied" ? "bg-red-500" : a.kind === "comment" ? "bg-slate-400" : "bg-slate-900"
+                a.kind === "approved" ? "bg-emerald-500" : a.kind === "denied" || a.kind === "trashed" ? "bg-red-500" : a.kind === "comment" ? "bg-slate-400" : "bg-slate-900"
               }`}
             />
             <div className="min-w-0 flex-1">

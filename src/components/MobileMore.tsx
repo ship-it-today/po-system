@@ -32,6 +32,7 @@ export default function MobileMore({ approver, admin }: { approver: boolean; adm
             {approver && <Link href="/reports" className={item} onClick={() => setOpen(false)}>Reports</Link>}
             {admin && <Link href="/admin/users" className={item} onClick={() => setOpen(false)}>Users</Link>}
             {admin && <Link href="/admin/budgets" className={item} onClick={() => setOpen(false)}>Budgets</Link>}
+            {admin && <Link href="/admin/trash" className={item} onClick={() => setOpen(false)}>Trash</Link>}
             <Link href="/account" className={item} onClick={() => setOpen(false)}>Account</Link>
             <form action={signOut}>
               <button className={`${item} w-full text-left text-slate-500`}>Sign out</button>

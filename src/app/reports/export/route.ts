@@ -30,6 +30,7 @@ export async function GET(request: Request) {
     )
     .gte("created_at", params.from.toISOString())
     .lt("created_at", params.to.toISOString())
+    .is("deleted_at", null)
     .order("created_at");
   if (params.department) q = q.eq("department", params.department);
   if (params.requester) q = q.eq("requester_id", params.requester);

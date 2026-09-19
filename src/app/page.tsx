@@ -20,11 +20,12 @@ export default async function HomePage({
       .from("purchase_orders")
       .select("id", { count: "exact", head: true })
       .eq("requester_id", profile.id)
-      .eq("status", "pending"),
+      .eq("status", "pending")
+      .is("deleted_at", null),
     canApprove(profile.role)
-      ? supabase.from("purchase_orders").select("id", { count: "exact", head: true }).eq("status", "pending")
+      ? supabase.from("purchase_orders").select("id", { count: "exact", head: true }).eq("status", "pending").is("deleted_at", null)
       : Promise.resolve({ count: 0 }),
-    supabase.from("purchase_orders").select("pay_to").order("created_at", { ascending: false }).limit(300),
+    supabase.from("purchase_orders").select("pay_to").is("deleted_at", null).order("created_at", { ascending: false }).limit(300),
     from
       ? supabase
           .from("purchase_orders")
