@@ -54,12 +54,13 @@ export default function POForm({ initial, duplicate = false, payees = [], onSubm
   }, [error]);
 
   function clearForm() {
-    if (!window.confirm("Clear everything you've entered on this form?")) return;
-    setItems([emptyItem()]);
-    setTiming("next_run");
-    setReceiptStatus("will_turn_in");
+    const msg = editing ? "Discard your changes and restore the saved values?" : "Clear everything you've entered on this form?";
+    if (!window.confirm(msg)) return;
+    setItems(editing && initial?.line_items?.length ? initial.line_items : [emptyItem()]);
+    setTiming(editing ? (initial?.payment_timing ?? "next_run") : "next_run");
+    setReceiptStatus(editing ? (initial?.receipt_status ?? "will_turn_in") : "will_turn_in");
     setReceiptFile(null);
-    setOtherCharges(0);
+    setOtherCharges(editing ? (initial?.other_charges ?? 0) : 0);
     setError(null);
     setFormKey((k) => k + 1); // remounts the uncontrolled inputs
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -108,14 +109,6 @@ export default function POForm({ initial, duplicate = false, payees = [], onSubm
 
   return (
     <form key={formKey} onSubmit={handleSubmit} className="space-y-6">
-      <div className="flex items-center justify-between -mb-3">
-        <span className="text-xs text-slate-400">Your entries are kept if something needs fixing.</span>
-        {!editing && (
-          <button type="button" onClick={clearForm} className="text-xs text-slate-400 hover:text-slate-700 underline">
-            Clear form
-          </button>
-        )}
-      </div>
       {error && (
         <p ref={errorRef} role="alert" className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-md px-3 py-2">
           {error}
@@ -123,7 +116,25 @@ export default function POForm({ initial, duplicate = false, payees = [], onSubm
       )}
 
       {/* 1–3 */}
-      <Section title="Request">
+      <Section
+        title="Request"
+        action={
+          (
+            <button
+              type="button"
+              onClick={clearForm}
+              title={editing ? "Reset changes" : "Clear form"}
+              aria-label={editing ? "Reset changes" : "Clear form"}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M3 12a9 9 0 1 0 3-6.7" />
+                <path d="M3 4v5h5" />
+              </svg>
+            </button>
+          )
+        }
+      >
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="Department" required>
             <select name="department" required defaultValue={initial?.department ?? ""} className={inputCls}>
@@ -429,10 +440,13 @@ export default function POForm({ initial, duplicate = false, payees = [], onSubm
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
   return (
     <section className="rounded-lg border border-slate-200 bg-white p-6">
-      <h2 className="font-semibold mb-4">{title}</h2>
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="font-semibold">{title}</h2>
+        {action}
+      </div>
       {children}
     </section>
   );

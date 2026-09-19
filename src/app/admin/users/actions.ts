@@ -148,3 +148,17 @@ export async function deleteUser(formData: FormData) {
   revalidatePath("/admin/users");
   back({ saved: "User deleted." });
 }
+
+export async function sendTestEmail() {
+  const me = await requireRole(["admin"]);
+  const { notificationsEnabled, sendEmail, emailLayout } = await import("@/lib/notify");
+  if (!notificationsEnabled()) back({ error: "Email isn't configured yet. Add SMTP_* or RESEND_API_KEY on Vercel (see README)." });
+  const h = await headers();
+  const origin = `${h.get("x-forwarded-proto") ?? "https"}://${h.get("x-forwarded-host") ?? h.get("host")}`;
+  await sendEmail(
+    [me.email],
+    "Test email from Purchase Orders",
+    emailLayout("Email is working", ["This is a test message from your purchase order system."], origin, "Open the app")
+  );
+  back({ saved: `Test email sent to ${me.email}. If it doesn't arrive within a minute, check spam and the Vercel logs.` });
+}

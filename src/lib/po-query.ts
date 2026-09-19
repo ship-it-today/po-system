@@ -31,8 +31,10 @@ const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v
 
 export function parseListParams(sp: RawSearchParams, defaults: Partial<ListParams> = {}): ListParams {
   const status = first(sp.status);
-  const sort = first(sp.sort) as SortKey;
-  const dir = first(sp.dir);
+  // "sortdir" (mobile select) = "column:asc|desc"; falls back to separate sort/dir params.
+  const [sdSort, sdDir] = first(sp.sortdir).split(":");
+  const sort = (sdSort || first(sp.sort)) as SortKey;
+  const dir = sdDir || first(sp.dir);
   const page = parseInt(first(sp.page), 10);
   return {
     q: first(sp.q).trim().slice(0, 100),

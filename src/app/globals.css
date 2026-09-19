@@ -17,6 +17,12 @@ input:focus, select:focus, textarea:focus {
   outline-offset: 0;
 }
 
+/* Mobile: 16px inputs stop iOS from zooming on focus; 44px min tap targets */
+@media (max-width: 767px) {
+  input:not([type="checkbox"]):not([type="radio"]), select, textarea { font-size: 16px; }
+  button, a[role="button"], summary { min-height: 40px; }
+}
+
 @media print {
   @page { margin: 0.6in; }
   body { background: white; }

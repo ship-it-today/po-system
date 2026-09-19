@@ -37,7 +37,34 @@ export default function POTable({
           {emptyText}
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+        <>
+        {/* Mobile: tappable cards */}
+        <ul className="md:hidden space-y-2">
+          {orders.map((po) => (
+            <li key={po.id}>
+              <Link href={`/po/${po.id}`} className="block rounded-lg border border-slate-200 bg-white p-4 active:bg-slate-50">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="font-medium text-slate-900">PO-{po.po_number} <span className="font-normal text-slate-500">· {po.pay_to}</span></div>
+                    <div className="mt-0.5 text-sm text-slate-600 truncate">
+                      {[po.project_name, po.department].filter(Boolean).join(" · ") || "—"}
+                    </div>
+                    <div className="mt-1 text-xs text-slate-400">
+                      {showRequester && `${displayName(po.requester)} · `}
+                      {new Date(po.created_at).toLocaleDateString()}
+                    </div>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <div className="font-semibold tabular-nums">{formatMoney(po.total)}</div>
+                    <div className="mt-1"><StatusBadge status={po.status} /></div>
+                  </div>
+                </div>
+              </Link>
+            </li>
+          ))}
+        </ul>
+        {/* Desktop: sortable table */}
+        <div className="hidden md:block overflow-x-auto rounded-lg border border-slate-200 bg-white">
           <table className="min-w-full text-sm">
             <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
               <tr>
@@ -73,6 +100,7 @@ export default function POTable({
             </tbody>
           </table>
         </div>
+        </>
       )}
 
       <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-sm text-slate-500">
@@ -116,7 +144,7 @@ function PageLink({
   current?: boolean;
   children: React.ReactNode;
 }) {
-  const cls = `rounded-md px-2.5 py-1 text-sm ${
+  const cls = `rounded-md px-3 py-2 md:py-1 text-sm ${
     current ? "bg-slate-900 text-white" : disabled ? "text-slate-300" : "text-slate-700 hover:bg-slate-100"
   }`;
   if (disabled || current) return <span className={cls}>{children}</span>;

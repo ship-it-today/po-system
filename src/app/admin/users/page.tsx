@@ -3,7 +3,8 @@ import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { adminInvitesEnabled, createAdminClient } from "@/lib/supabase/admin";
 import { ROLES, type Profile } from "@/lib/types";
-import { deleteUser, inviteUser, removeUser, resendInvite, restoreUser, setRole } from "./actions";
+import { deleteUser, inviteUser, removeUser, resendInvite, restoreUser, sendTestEmail, setRole } from "./actions";
+import { notificationsEnabled } from "@/lib/notify";
 import DangerConfirm from "./DangerConfirm";
 
 const inputCls = "w-full rounded-md border border-slate-300 px-3 py-2 text-sm";
@@ -98,7 +99,7 @@ export default async function UsersPage({
                   ))}
                 </select>
               </label>
-              <button className="sm:col-span-2 rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">
+              <button className="sm:col-span-2 rounded-md bg-slate-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-slate-800">
                 Send invite
               </button>
             </form>
@@ -115,7 +116,89 @@ export default async function UsersPage({
         )}
       </section>
 
-      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+      {/* Mobile: cards */}
+      <ul className="md:hidden space-y-2">
+        {users.map((u) => {
+          const info = auth.get(u.id);
+          const isMe = u.id === admin.id;
+          const removed = u.disabled || info?.banned;
+          const pendingInvite = info ? !info.lastSignIn : false;
+          const hasPOs = (poCount.get(u.id) ?? 0) > 0;
+          return (
+            <li key={u.id} className={`rounded-lg border border-slate-200 bg-white p-4 ${removed ? "opacity-70" : ""}`}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="font-medium truncate">{u.full_name ?? u.email}{isMe && <span className="ml-1 text-xs text-slate-400">(you)</span>}</div>
+                  {u.full_name && <div className="text-sm text-slate-500 truncate">{u.email}</div>}
+                </div>
+                <span className={`shrink-0 rounded-full border px-2 py-0.5 text-xs font-medium ${
+                  removed ? "border-slate-300 bg-slate-100" : !info ? "border-slate-200 text-slate-500" : pendingInvite ? "border-amber-200 bg-amber-50 text-amber-800" : "border-emerald-200 bg-emerald-50 text-emerald-800"
+                }`}>
+                  {removed ? "Removed" : !info ? "Joined" : pendingInvite ? "Invite pending" : "Active"}
+                </span>
+              </div>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                {!removed ? (
+                  <form action={setRole} className="flex items-center gap-2">
+                    <input type="hidden" name="id" value={u.id} />
+                    <select name="role" defaultValue={u.role} className="rounded-md border border-slate-300 px-2 py-2 text-sm capitalize">
+                      {ROLES.map((r) => (
+                        <option key={r} value={r}>{r}</option>
+                      ))}
+                    </select>
+                    <button className="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white">Save</button>
+                  </form>
+                ) : (
+                  <span className="text-sm capitalize text-slate-500">{u.role}</span>
+                )}
+                {managed && !isMe && (
+                  <div className="ml-auto flex flex-wrap gap-2">
+                    {pendingInvite && !removed && (
+                      <form action={resendInvite}>
+                        <input type="hidden" name="email" value={u.email} />
+                        <button className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm">Resend</button>
+                      </form>
+                    )}
+                    {!removed ? (
+                      <form action={removeUser}>
+                        <input type="hidden" name="id" value={u.id} />
+                        <DangerConfirm
+                          label="Remove"
+                          title={`Remove access for ${u.full_name ?? u.email}?`}
+                          description={`${u.email} will be signed out and won't be able to sign in again.\n\nTheir purchase orders are kept, and you can restore access later.`}
+                          confirmLabel="Remove access"
+                          className="rounded-md border border-amber-300 bg-white px-3 py-2 text-sm text-amber-800"
+                        />
+                      </form>
+                    ) : (
+                      <form action={restoreUser}>
+                        <input type="hidden" name="id" value={u.id} />
+                        <button className="rounded-md border border-emerald-300 bg-white px-3 py-2 text-sm text-emerald-800">Restore</button>
+                      </form>
+                    )}
+                    {!hasPOs && (
+                      <form action={deleteUser}>
+                        <input type="hidden" name="id" value={u.id} />
+                        <DangerConfirm
+                          label="Delete"
+                          title={`Permanently delete ${u.full_name ?? u.email}?`}
+                          description={`This deletes the account for ${u.email}. It cannot be undone.`}
+                          confirmLabel="Delete permanently"
+                          typeToConfirm={u.email}
+                          className="rounded-md border border-red-300 bg-white px-3 py-2 text-sm text-red-700"
+                        />
+                      </form>
+                    )}
+                  </div>
+                )}
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+
+      {/* Desktop: table */}
+      <div className="hidden md:block overflow-x-auto rounded-lg border border-slate-200 bg-white">
         <table className="min-w-full text-sm">
           <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
             <tr>
@@ -240,6 +323,24 @@ export default async function UsersPage({
           </tbody>
         </table>
       </div>
+
+      <section className="mt-6 rounded-lg border border-slate-200 bg-white p-5 flex flex-wrap items-center justify-between gap-3">
+        <div className="text-sm">
+          <div className="font-semibold">Email Notifications</div>
+          <div className="text-slate-500 mt-0.5">
+            {notificationsEnabled() ? (
+              <span className="text-emerald-700">On — approvers are emailed on new POs, requesters on decisions, both on comments.</span>
+            ) : (
+              <span className="text-amber-800">Off — add SMTP settings or a Resend key on Vercel (see README) to turn on.</span>
+            )}
+          </div>
+        </div>
+        {notificationsEnabled() && (
+          <form action={sendTestEmail}>
+            <button className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm hover:bg-slate-50">Send me a test email</button>
+          </form>
+        )}
+      </section>
 
       {managed && (
         <p className="mt-4 text-xs text-slate-500">

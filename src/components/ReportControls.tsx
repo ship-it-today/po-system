@@ -1,4 +1,5 @@
 import Link from "next/link";
+import AutoSubmitForm from "./AutoSubmitForm";
 import { DEPARTMENTS } from "@/lib/po-fields";
 import { PRESETS, UNITS, allowedUnits, isoDate, addUnit, reportQuery, type PresetKey, type ReportParams, type Unit } from "@/lib/reports";
 
@@ -34,7 +35,7 @@ export default function ReportControls({
         ))}
         <details className="relative">
           <summary className={`${chip(params.preset === "custom")} cursor-pointer list-none`}>Custom…</summary>
-          <form method="get" action="/reports" className="absolute left-0 z-20 mt-2 flex flex-wrap items-end gap-2 rounded-lg border border-slate-200 bg-white p-3 shadow-lg">
+          <AutoSubmitForm action="/reports" className="absolute left-0 z-20 mt-2 flex flex-wrap items-end gap-2 rounded-lg border border-slate-200 bg-white p-3 shadow-lg">
             <input type="hidden" name="preset" value="custom" />
             {params.department && <input type="hidden" name="department" value={params.department} />}
             {params.requester && <input type="hidden" name="requester" value={params.requester} />}
@@ -47,8 +48,7 @@ export default function ReportControls({
               To
               <input name="to" type="date" required defaultValue={isoDate(toInclusive)} className={`${inputCls} block`} />
             </label>
-            <button className="rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white">Apply</button>
-          </form>
+          </AutoSubmitForm>
         </details>
       </div>
 
@@ -89,7 +89,7 @@ export default function ReportControls({
           Compare to previous period
         </Link>
 
-        <form method="get" action="/reports" className="flex w-full items-center gap-2 sm:w-auto">
+        <AutoSubmitForm action="/reports" className="flex w-full items-center gap-2 sm:w-auto data-[pending]:opacity-70">
           <input type="hidden" name="preset" value={params.preset} />
           {params.preset === "custom" && (
             <>
@@ -113,8 +113,7 @@ export default function ReportControls({
               </option>
             ))}
           </select>
-          <button className="rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-sm hover:bg-slate-50">Apply</button>
-        </form>
+        </AutoSubmitForm>
       </div>
     </div>
   );

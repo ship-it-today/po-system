@@ -77,6 +77,9 @@ export default async function PODetailPage({
         <p className="mb-4 text-sm text-red-700 bg-red-50 border border-red-200 rounded-md px-3 py-2">{error}</p>
       )}
 
+      <Link href={canApprove(profile.role) && !isOwner ? "/approvals" : "/history"} className="md:hidden inline-flex items-center gap-1 text-sm text-slate-500 mb-3">
+        ← Back
+      </Link>
       <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
         <div>
           <div className="flex items-center gap-3">

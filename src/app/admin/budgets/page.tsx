@@ -69,9 +69,9 @@ export default async function BudgetsPage({
           <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
             <tr>
               <th className="px-4 py-2.5">Department</th>
-              <th className="px-4 py-2.5 w-44">Budget {year}</th>
-              <th className="px-4 py-2.5 text-right">Approved</th>
-              <th className="px-4 py-2.5 text-right">Pending</th>
+              <th className="px-4 py-2.5 w-32 md:w-44">Budget {year}</th>
+              <th className="hidden md:table-cell px-4 py-2.5 text-right">Approved</th>
+              <th className="hidden md:table-cell px-4 py-2.5 text-right">Pending</th>
               <th className="px-4 py-2.5 text-right">Remaining</th>
             </tr>
           </thead>
@@ -96,8 +96,8 @@ export default async function BudgetsPage({
                       />
                     </div>
                   </td>
-                  <td className="px-4 py-2 text-right tabular-nums">{formatMoney(u.approved)}</td>
-                  <td className="px-4 py-2 text-right tabular-nums text-slate-500">{formatMoney(u.pending)}</td>
+                  <td className="hidden md:table-cell px-4 py-2 text-right tabular-nums">{formatMoney(u.approved)}</td>
+                  <td className="hidden md:table-cell px-4 py-2 text-right tabular-nums text-slate-500">{formatMoney(u.pending)}</td>
                   <td className={`px-4 py-2 text-right tabular-nums ${remaining != null && remaining < 0 ? "text-red-700 font-medium" : ""}`}>
                     {remaining == null ? <span className="text-slate-400">—</span> : formatMoney(remaining)}
                   </td>

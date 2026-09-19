@@ -3,6 +3,7 @@ import { signOut } from "@/app/login/actions";
 import type { Profile } from "@/lib/types";
 import { canApprove, displayName } from "@/lib/types";
 import MobileMore from "./MobileMore";
+import MobileTab from "./MobileTab";
 
 export default function AppShell({ profile, children }: { profile: Profile; children: React.ReactNode }) {
   const approver = canApprove(profile.role);
@@ -72,23 +73,12 @@ export default function AppShell({ profile, children }: { profile: Profile; chil
         aria-label="Primary"
       >
         <div className={`grid ${approver ? "grid-cols-4" : "grid-cols-3"} h-14 text-[11px]`}>
-          <Tab href="/" label="New PO" icon="M12 5v14M5 12h14" />
-          <Tab href="/history" label="My POs" icon="M4 6h16M4 12h16M4 18h10" />
-          {approver && <Tab href="/approvals" label={admin ? "All POs" : "Approvals"} icon="M9 12l2 2 4-4M5 5h14v14H5z" />}
+          <MobileTab href="/" label="New PO" icon="M12 5v14M5 12h14" />
+          <MobileTab href="/history" label="My POs" icon="M4 6h16M4 12h16M4 18h10" />
+          {approver && <MobileTab href="/approvals" label={admin ? "All POs" : "Approvals"} icon="M9 12l2 2 4-4M5 5h14v14H5z" />}
           <MobileMore approver={approver} admin={admin} />
         </div>
       </nav>
     </div>
-  );
-}
-
-function Tab({ href, label, icon }: { href: string; label: string; icon: string }) {
-  return (
-    <Link href={href} className="flex flex-col items-center justify-center gap-0.5 text-slate-600 active:bg-slate-50">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-        <path d={icon} />
-      </svg>
-      {label}
-    </Link>
   );
 }
