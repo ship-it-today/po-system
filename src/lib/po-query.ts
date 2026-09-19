@@ -5,7 +5,7 @@ export const PAGE_SIZE = 25;
 
 export const SORT_COLUMNS = {
   po_number: "PO #",
-  pay_to: "Pay to",
+  pay_to: "Pay To",
   department: "Department",
   total: "Total",
   status: "Status",

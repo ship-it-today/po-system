@@ -63,17 +63,17 @@ export default async function PrintPOPage({ params }: { params: Promise<{ id: st
             <h2 className="text-xs font-bold uppercase tracking-wide text-slate-500 border-b border-slate-300 pb-1 mb-2">
               Request
             </h2>
-            <Row label="Requested by" value={displayName(po.requester)} />
+            <Row label="Requested By" value={displayName(po.requester)} />
             <Row label="Email" value={po.requester?.email} />
             <Row label="Department" value={po.department} />
             <Row label="Project" value={po.project_name} />
-            <Row label="Payment needed" value={timing} />
-            <Row label="Payment method" value={labelFor(PAYMENT_METHODS, po.payment_method)} />
+            <Row label="Payment Needed" value={timing} />
+            <Row label="Payment Method" value={labelFor(PAYMENT_METHODS, po.payment_method)} />
             <Row label="Delivery" value={po.delivery ? labelFor(DELIVERY_OPTIONS, po.delivery) : null} />
           </section>
           <section>
             <h2 className="text-xs font-bold uppercase tracking-wide text-slate-500 border-b border-slate-300 pb-1 mb-2">
-              Pay to
+              Pay To
             </h2>
             <Row label="Payee" value={po.pay_to} />
             <Row label="Address" value={address} />
@@ -84,7 +84,7 @@ export default async function PrintPOPage({ params }: { params: Promise<{ id: st
         {/* Purpose */}
         <section className="mb-6">
           <h2 className="text-xs font-bold uppercase tracking-wide text-slate-500 border-b border-slate-300 pb-1 mb-2">
-            Purpose / description
+            Purpose / Description
           </h2>
           <p className="whitespace-pre-wrap">{po.purpose || "—"}</p>
         </section>
@@ -92,7 +92,7 @@ export default async function PrintPOPage({ params }: { params: Promise<{ id: st
         {/* Items */}
         <section className="mb-6">
           <h2 className="text-xs font-bold uppercase tracking-wide text-slate-500 border-b border-slate-300 pb-1 mb-2">
-            Itemized purchase details
+            Itemized Purchase Details
           </h2>
           <table className="w-full">
             <thead>
@@ -111,11 +111,11 @@ export default async function PrintPOPage({ params }: { params: Promise<{ id: st
             </tbody>
             <tfoot>
               <tr className="border-t border-slate-300">
-                <td className="py-1 text-right text-slate-600">Items subtotal</td>
+                <td className="py-1 text-right text-slate-600">Items Subtotal</td>
                 <td className="py-1 text-right tabular-nums">{formatMoney(po.items_total)}</td>
               </tr>
               <tr>
-                <td className="py-1 text-right text-slate-600">Other charges</td>
+                <td className="py-1 text-right text-slate-600">Other Charges</td>
                 <td className="py-1 text-right tabular-nums">{formatMoney(po.other_charges)}</td>
               </tr>
               <tr className="border-t-2 border-slate-900">
@@ -124,7 +124,7 @@ export default async function PrintPOPage({ params }: { params: Promise<{ id: st
               </tr>
               {po.not_to_exceed != null && (
                 <tr>
-                  <td className="py-1 text-right text-slate-600">Not to exceed</td>
+                  <td className="py-1 text-right text-slate-600">Not to Exceed</td>
                   <td className="py-1 text-right tabular-nums">{formatMoney(po.not_to_exceed)}</td>
                 </tr>
               )}
@@ -136,7 +136,7 @@ export default async function PrintPOPage({ params }: { params: Promise<{ id: st
         <div className="grid grid-cols-2 gap-8 mb-8">
           <section>
             <h2 className="text-xs font-bold uppercase tracking-wide text-slate-500 border-b border-slate-300 pb-1 mb-2">
-              Notes / instructions
+              Additional Notes / Special Instructions
             </h2>
             <p className="whitespace-pre-wrap">{po.notes || "—"}</p>
           </section>
@@ -144,7 +144,7 @@ export default async function PrintPOPage({ params }: { params: Promise<{ id: st
             <h2 className="text-xs font-bold uppercase tracking-wide text-slate-500 border-b border-slate-300 pb-1 mb-2">
               Receipt
             </h2>
-            <p>{po.receipt_status === "uploaded" ? "☑ Receipt attached (see online record)" : "☐ Receipt to be turned in"}</p>
+            <p>{po.receipt_status === "uploaded" ? "☑ Receipt attached (see online record)" : `☐ Receipt to be turned in — write PO-${po.po_number} on it`}</p>
           </section>
         </div>
 
@@ -168,11 +168,11 @@ export default async function PrintPOPage({ params }: { params: Promise<{ id: st
         <div className="grid grid-cols-2 gap-12 mt-10">
           <div>
             <div className="border-b border-slate-900 h-8" />
-            <div className="text-xs text-slate-500 mt-1">Requester signature / date</div>
+            <div className="text-xs text-slate-500 mt-1">Requester Signature / Date</div>
           </div>
           <div>
             <div className="border-b border-slate-900 h-8" />
-            <div className="text-xs text-slate-500 mt-1">Approver signature / date</div>
+            <div className="text-xs text-slate-500 mt-1">Approver Signature / Date</div>
           </div>
         </div>
 

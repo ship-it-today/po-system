@@ -29,20 +29,6 @@ export default function POTable({
   };
   const pageHref = (page: number) => basePath + toQuery({ ...params, page });
 
-  const Th = ({ k, right }: { k: SortKey; right?: boolean }) => {
-    const activeSort = params.sort === k;
-    return (
-      <th className={`px-4 py-2.5 ${right ? "text-right" : ""}`}>
-        <Link
-          href={sortHref(k)}
-          className={`inline-flex items-center gap-1 hover:text-slate-900 ${activeSort ? "text-slate-900" : ""}`}
-        >
-          {SORT_COLUMNS[k]}
-          <span className="text-[10px]">{activeSort ? (params.dir === "asc" ? "▲" : "▼") : "↕"}</span>
-        </Link>
-      </th>
-    );
-  };
 
   return (
     <div>
@@ -55,14 +41,14 @@ export default function POTable({
           <table className="min-w-full text-sm">
             <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
               <tr>
-                <Th k="po_number" />
-                <th className="px-4 py-2.5">Project</th>
-                <Th k="pay_to" />
+                <Th k="po_number" params={params} href={sortHref("po_number")} />
+                <th className="px-4 py-2.5">Project Name</th>
+                <Th k="pay_to" params={params} href={sortHref("pay_to")} />
                 {showRequester && <th className="px-4 py-2.5">Requester</th>}
-                <Th k="department" />
-                <Th k="total" right />
-                <Th k="status" />
-                <Th k="created_at" />
+                <Th k="department" params={params} href={sortHref("department")} />
+                <Th k="total" right params={params} href={sortHref("total")} />
+                <Th k="status" params={params} href={sortHref("status")} />
+                <Th k="created_at" params={params} href={sortHref("created_at")} />
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -151,4 +137,16 @@ function pageNumbers(current: number, pages: number): (number | null)[] {
     out.push(nums[i]);
   }
   return out;
+}
+
+function Th({ k, right, params, href }: { k: SortKey; right?: boolean; params: ListParams; href: string }) {
+  const activeSort = params.sort === k;
+  return (
+    <th className={`px-4 py-2.5 ${right ? "text-right" : ""}`}>
+      <Link href={href} className={`inline-flex items-center gap-1 hover:text-slate-900 ${activeSort ? "text-slate-900" : ""}`}>
+        {SORT_COLUMNS[k]}
+        <span className="text-[10px]">{activeSort ? (params.dir === "asc" ? "▲" : "▼") : "↕"}</span>
+      </Link>
+    </th>
+  );
 }

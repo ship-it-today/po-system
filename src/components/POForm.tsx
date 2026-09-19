@@ -16,19 +16,31 @@ import { formatMoney } from "@/lib/types";
 
 type Props = {
   initial?: PurchaseOrder;
+  /** True when `initial` is a template to copy (Duplicate), not a PO being edited. */
+  duplicate?: boolean;
+  /** Previously used payees, for the Pay To autocomplete. */
+  payees?: string[];
   onSubmit: (formData: FormData) => Promise<{ error?: string } | void>;
 };
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
 const emptyItem = (): LineItem => ({ description: "", amount: 0 });
 const inputCls = "w-full rounded-md border border-slate-300 px-3 py-2 text-sm";
+const segCls = "flex flex-wrap gap-2 pt-0.5";
+const segItemCls = "cursor-pointer";
+const segLabelCls =
+  "inline-flex min-h-10 items-center rounded-md border border-slate-300 bg-white px-3.5 py-2 text-sm text-slate-700 select-none " +
+  "peer-checked:border-slate-900 peer-checked:bg-slate-900 peer-checked:text-white peer-focus-visible:ring-2 peer-focus-visible:ring-slate-400";
 
-export default function POForm({ initial, onSubmit }: Props) {
+export default function POForm({ initial, duplicate = false, payees = [], onSubmit }: Props) {
+  const editing = Boolean(initial) && !duplicate;
   const [items, setItems] = useState<LineItem[]>(
     initial?.line_items?.length ? initial.line_items : [emptyItem()]
   );
   const [timing, setTiming] = useState<PaymentTiming>(initial?.payment_timing ?? "next_run");
-  const [receiptStatus, setReceiptStatus] = useState<ReceiptStatus>(initial?.receipt_status ?? "will_turn_in");
+  const [receiptStatus, setReceiptStatus] = useState<ReceiptStatus>(
+    editing ? (initial?.receipt_status ?? "will_turn_in") : "will_turn_in"
+  );
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [otherCharges, setOtherCharges] = useState<number>(initial?.other_charges ?? 0);
   const [error, setError] = useState<string | null>(null);
@@ -45,7 +57,7 @@ export default function POForm({ initial, onSubmit }: Props) {
     setError(null);
     formData.set("line_items", JSON.stringify(items));
     formData.set("receipt_status", receiptStatus);
-    if (initial?.receipt_path) formData.set("receipt_path", initial.receipt_path);
+    if (editing && initial?.receipt_path) formData.set("receipt_path", initial.receipt_path);
 
     startTransition(async () => {
       // Upload receipt straight from the browser to Supabase Storage.
@@ -62,7 +74,7 @@ export default function POForm({ initial, onSubmit }: Props) {
           .upload(path, receiptFile, { upsert: false });
         if (upErr) return setError(`Receipt upload failed: ${upErr.message}`);
         formData.set("receipt_path", path);
-      } else if (receiptStatus === "uploaded" && !initial?.receipt_path) {
+      } else if (receiptStatus === "uploaded" && !(editing && initial?.receipt_path)) {
         return setError("Choose a receipt file, or select “I will turn in the receipt”.");
       }
 
@@ -90,26 +102,27 @@ export default function POForm({ initial, onSubmit }: Props) {
               ))}
             </select>
           </Field>
-          <Field label="Project name">
+          <Field label="Project Name">
             <input name="project_name" defaultValue={initial?.project_name ?? ""} className={inputCls} />
           </Field>
-          <Field label="Payment needed" required>
-            <div className="flex flex-wrap gap-x-4 gap-y-2 pt-1.5 text-sm">
+          <Field label="Payment Needed" required>
+            <div className={segCls}>
               {PAYMENT_TIMING.map((o) => (
-                <label key={o.value} className="flex items-center gap-1.5">
+                <label key={o.value} className={segItemCls}>
                   <input
                     type="radio"
                     name="payment_timing"
                     value={o.value}
                     checked={timing === o.value}
                     onChange={() => setTiming(o.value)}
+                    className="peer sr-only"
                   />
-                  {o.label}
+                  <span className={segLabelCls}>{o.label}</span>
                 </label>
               ))}
             </div>
           </Field>
-          <Field label="Need by date" required={timing === "by_date"}>
+          <Field label="Need by Date" required={timing === "by_date"}>
             <input
               name="needed_by"
               type="date"
@@ -123,20 +136,27 @@ export default function POForm({ initial, onSubmit }: Props) {
       </Section>
 
       {/* 4–7 */}
-      <Section title="Pay to">
+      <Section title="Pay To">
         <div className="grid grid-cols-1 sm:grid-cols-6 gap-4">
           <div className="sm:col-span-4">
-            <Field label="Pay to" required>
-              <input name="pay_to" required defaultValue={initial?.pay_to} className={inputCls} placeholder="Payee / vendor name" />
+            <Field label="Pay To" required>
+              <input name="pay_to" required defaultValue={initial?.pay_to} className={inputCls} placeholder="Payee / vendor name" list="payee-list" autoComplete="off" />
+              {payees.length > 0 && (
+                <datalist id="payee-list">
+                  {payees.map((p) => (
+                    <option key={p} value={p} />
+                  ))}
+                </datalist>
+              )}
             </Field>
           </div>
           <div className="sm:col-span-2">
-            <Field label="Vendor phone">
+            <Field label="Vendor Phone">
               <input name="vendor_phone" type="tel" defaultValue={initial?.vendor_phone ?? ""} className={inputCls} />
             </Field>
           </div>
           <div className="sm:col-span-6">
-            <Field label="Street address">
+            <Field label="Street Address">
               <input name="vendor_street" defaultValue={initial?.vendor_street ?? ""} className={inputCls} />
             </Field>
           </div>
@@ -161,18 +181,19 @@ export default function POForm({ initial, onSubmit }: Props) {
             </Field>
           </div>
           <div className="sm:col-span-6">
-            <Field label="Payment method" required>
-              <div className="flex flex-wrap gap-x-4 gap-y-2 pt-1.5 text-sm">
+            <Field label="Payment Method" required>
+              <div className={segCls}>
                 {PAYMENT_METHODS.map((o) => (
-                  <label key={o.value} className="flex items-center gap-1.5">
+                  <label key={o.value} className={segItemCls}>
                     <input
                       type="radio"
                       name="payment_method"
                       value={o.value}
                       required
                       defaultChecked={initial?.payment_method === o.value}
+                      className="peer sr-only"
                     />
-                    {o.label}
+                    <span className={segLabelCls}>{o.label}</span>
                   </label>
                 ))}
               </div>
@@ -180,16 +201,17 @@ export default function POForm({ initial, onSubmit }: Props) {
           </div>
           <div className="sm:col-span-6">
             <Field label="Delivery">
-              <div className="flex flex-wrap gap-x-4 gap-y-2 pt-1.5 text-sm">
+              <div className={segCls}>
                 {DELIVERY_OPTIONS.map((o) => (
-                  <label key={o.value} className="flex items-center gap-1.5">
+                  <label key={o.value} className={segItemCls}>
                     <input
                       type="radio"
                       name="delivery"
                       value={o.value}
                       defaultChecked={initial?.delivery === o.value}
+                      className="peer sr-only"
                     />
-                    {o.label}
+                    <span className={segLabelCls}>{o.label}</span>
                   </label>
                 ))}
               </div>
@@ -199,14 +221,18 @@ export default function POForm({ initial, onSubmit }: Props) {
       </Section>
 
       {/* 8–10 */}
-      <Section title="Purchase details">
-        <Field label="Purpose / description" required>
+      <Section title="Purchase Details">
+        <Field
+          label="Purpose / Description"
+          required
+          help="Please provide a clear and detailed description of the purchase and its intended purpose. Include any information that may be helpful for approval and processing."
+        >
           <textarea name="purpose" rows={3} required defaultValue={initial?.purpose ?? ""} className={inputCls} />
         </Field>
 
         <div className="mt-5">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium text-slate-600">Itemized purchase details</span>
+            <span className="text-xs font-medium text-slate-600">Itemized Purchase Details</span>
             <button
               type="button"
               onClick={() => setItems((p) => [...p, emptyItem()])}
@@ -217,20 +243,21 @@ export default function POForm({ initial, onSubmit }: Props) {
           </div>
           <div className="space-y-2">
             {items.map((it, idx) => (
-              <div key={idx} className="grid grid-cols-12 gap-2 items-center">
+              <div key={idx} className="rounded-md border border-slate-200 p-2 sm:border-0 sm:p-0 grid grid-cols-12 gap-2 items-center">
                 <input
-                  className={`${inputCls} col-span-8 sm:col-span-9`}
-                  placeholder="Item"
+                  className={`${inputCls} col-span-12 sm:col-span-8`}
+                  placeholder={`Item ${idx + 1}`}
                   value={it.description}
                   required
                   onChange={(e) => updateItem(idx, { description: e.target.value })}
                 />
-                <div className="col-span-3 sm:col-span-2 relative">
+                <div className="col-span-9 sm:col-span-3 relative">
                   <span className="absolute left-2.5 top-2 text-sm text-slate-400">$</span>
                   <input
                     type="number"
                     min="0"
                     step="0.01"
+                    inputMode="decimal"
                     className={`${inputCls} pl-6 text-right`}
                     value={it.amount}
                     onChange={(e) => updateItem(idx, { amount: Number(e.target.value) })}
@@ -241,9 +268,10 @@ export default function POForm({ initial, onSubmit }: Props) {
                   aria-label="Remove item"
                   disabled={items.length === 1}
                   onClick={() => setItems((p) => p.filter((_, i) => i !== idx))}
-                  className="col-span-1 text-slate-400 hover:text-red-600 disabled:opacity-30 text-center text-lg leading-none"
+                  className="col-span-3 sm:col-span-1 h-9 rounded-md border border-slate-200 sm:border-0 text-slate-500 hover:text-red-600 disabled:opacity-30 text-center text-sm sm:text-lg leading-none"
                 >
-                  ×
+                  <span className="sm:hidden">Remove</span>
+                  <span className="hidden sm:inline">×</span>
                 </button>
               </div>
             ))}
@@ -251,7 +279,7 @@ export default function POForm({ initial, onSubmit }: Props) {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-5">
-          <Field label="Payment amount / not to exceed" help="Leave blank to use the total">
+          <Field label="Amount / Not to Exceed" help="Leave blank if you want the PO to calculate totals using Itemized Purchase Details.">
             <div className="relative">
               <span className="absolute left-2.5 top-2 text-sm text-slate-400">$</span>
               <input
@@ -259,13 +287,14 @@ export default function POForm({ initial, onSubmit }: Props) {
                 type="number"
                 min="0"
                 step="0.01"
+                inputMode="decimal"
                 defaultValue={initial?.not_to_exceed ?? ""}
                 placeholder={grandTotal.toFixed(2)}
                 className={`${inputCls} pl-6 text-right`}
               />
             </div>
           </Field>
-          <Field label="Other charges" help="Shipping, tax, fees">
+          <Field label="Other Charges" help="Shipping, tax, fees">
             <div className="relative">
               <span className="absolute left-2.5 top-2 text-sm text-slate-400">$</span>
               <input
@@ -273,6 +302,7 @@ export default function POForm({ initial, onSubmit }: Props) {
                 type="number"
                 min="0"
                 step="0.01"
+                inputMode="decimal"
                 value={otherCharges}
                 onChange={(e) => setOtherCharges(Number(e.target.value))}
                 className={`${inputCls} pl-6 text-right`}
@@ -287,8 +317,8 @@ export default function POForm({ initial, onSubmit }: Props) {
       </Section>
 
       {/* 11–12 */}
-      <Section title="Notes & receipt">
-        <Field label="Notes / instructions">
+      <Section title="Notes & Receipts">
+        <Field label="Additional Notes / Special Instructions">
           <textarea name="notes" rows={3} defaultValue={initial?.notes ?? ""} className={inputCls} />
         </Field>
         <div className="mt-4">
@@ -301,7 +331,7 @@ export default function POForm({ initial, onSubmit }: Props) {
                 checked={receiptStatus === "uploaded"}
                 onChange={() => setReceiptStatus("uploaded")}
               />
-              Upload a receipt
+              Upload a Receipt
             </label>
             {receiptStatus === "uploaded" && (
               <div className="ml-5">
@@ -311,7 +341,7 @@ export default function POForm({ initial, onSubmit }: Props) {
                   onChange={(e) => setReceiptFile(e.target.files?.[0] ?? null)}
                   className="block text-sm text-slate-600 file:mr-3 file:rounded-md file:border file:border-slate-300 file:bg-white file:px-3 file:py-1.5 file:text-sm"
                 />
-                {initial?.receipt_path && !receiptFile && (
+                {editing && initial?.receipt_path && !receiptFile && (
                   <p className="text-xs text-slate-500 mt-1">A receipt is already attached; choose a file to replace it.</p>
                 )}
               </div>
@@ -323,8 +353,13 @@ export default function POForm({ initial, onSubmit }: Props) {
                 checked={receiptStatus === "will_turn_in"}
                 onChange={() => setReceiptStatus("will_turn_in")}
               />
-              I will turn in the receipt
+              I will turn in a receipt.
             </label>
+            {receiptStatus === "will_turn_in" && (
+              <p className="ml-5 text-xs text-amber-800">
+                Please be sure to write this PO # on the receipt. You&apos;ll get the PO # as soon as you submit.
+              </p>
+            )}
           </div>
         </div>
 
@@ -337,17 +372,27 @@ export default function POForm({ initial, onSubmit }: Props) {
         )}
       </Section>
 
-      <div className="flex justify-end gap-3">
-        <a href={initial ? `/po/${initial.id}` : "/"} className="rounded-md px-4 py-2 text-sm text-slate-600 hover:text-slate-900">
-          Cancel
-        </a>
-        <button
-          type="submit"
-          disabled={pending}
-          className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50"
-        >
-          {pending ? "Saving…" : initial ? "Save changes" : "Submit for approval"}
-        </button>
+      <div className="sticky bottom-14 md:bottom-0 -mx-4 px-4 py-3 bg-white/95 backdrop-blur border-t border-slate-200 flex items-center justify-between gap-3 md:static md:mx-0 md:px-0 md:bg-transparent md:border-0 md:justify-end">
+        <span className="text-sm text-slate-600 md:hidden">
+          Total <span className="font-semibold text-slate-900 tabular-nums">{formatMoney(grandTotal)}</span>
+        </span>
+        <div className="flex gap-3">
+          <a href={editing && initial ? `/po/${initial.id}` : "/history"} className="rounded-md px-4 py-2 text-sm text-slate-600 hover:text-slate-900">
+            Cancel
+          </a>
+          <button
+            type="submit"
+            disabled={pending}
+            className="rounded-md bg-slate-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50"
+          >
+            {pending ? "Saving…" : editing ? "Save changes" : (
+              <>
+                <span className="md:hidden">Submit</span>
+                <span className="hidden md:inline">Submit for approval</span>
+              </>
+            )}
+          </button>
+        </div>
       </div>
     </form>
   );

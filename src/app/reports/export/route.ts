@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { PAYMENT_METHODS, PAYMENT_TIMING, DELIVERY_OPTIONS, labelFor } from "@/lib/po-fields";
-import { makeBuckets, parsePeriod } from "@/lib/reports";
+import { parseReportParams } from "@/lib/reports";
+import { DEPARTMENTS } from "@/lib/po-fields";
 
 // CSV of every PO in the selected period (approvers/admins only; RLS enforces it).
 export async function GET(request: Request) {
@@ -17,16 +18,22 @@ export async function GET(request: Request) {
   }
 
   const { searchParams } = new URL(request.url);
-  const period = parsePeriod(searchParams.get("period") ?? undefined);
-  const buckets = makeBuckets(period);
+  const sp: Record<string, string> = {};
+  searchParams.forEach((v, k) => (sp[k] = v));
+  const { data: firstRow } = await supabase.from("purchase_orders").select("created_at").order("created_at").limit(1).maybeSingle();
+  const params = parseReportParams(sp, new Date(), firstRow ? new Date(firstRow.created_at) : null, DEPARTMENTS);
 
-  const { data } = await supabase
+  let q = supabase
     .from("purchase_orders")
     .select(
       "po_number, status, created_at, decided_at, department, project_name, pay_to, payment_method, payment_timing, needed_by, delivery, items_total, other_charges, total, not_to_exceed, receipt_status, requester:profiles!purchase_orders_requester_id_fkey(email,full_name), approver:profiles!purchase_orders_approver_id_fkey(email,full_name)"
     )
-    .gte("created_at", buckets[0].start.toISOString())
+    .gte("created_at", params.from.toISOString())
+    .lt("created_at", params.to.toISOString())
     .order("created_at");
+  if (params.department) q = q.eq("department", params.department);
+  if (params.requester) q = q.eq("requester_id", params.requester);
+  const { data } = await q;
 
   const header = [
     "PO #", "Status", "Submitted", "Decided", "Requester", "Approver", "Department", "Project",
@@ -73,7 +80,7 @@ export async function GET(request: Request) {
   return new NextResponse(lines.join("\n"), {
     headers: {
       "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": `attachment; filename="purchase-orders-${period}-${today}.csv"`,
+      "Content-Disposition": `attachment; filename="purchase-orders-${params.preset}-${today}.csv"`,
     },
   });
 }

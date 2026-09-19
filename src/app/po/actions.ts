@@ -4,8 +4,16 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile, requireRole } from "@/lib/auth";
+import { headers } from "next/headers";
 import { CUSTOM_FIELDS, DELIVERY_OPTIONS, DEPARTMENTS, PAYMENT_METHODS, PAYMENT_TIMING } from "@/lib/po-fields";
-import type { LineItem } from "@/lib/types";
+import { displayName, formatMoney, type LineItem } from "@/lib/types";
+import { logActivity } from "@/lib/activity";
+import { emailLayout, sendEmail } from "@/lib/notify";
+
+async function siteOrigin() {
+  const h = await headers();
+  return `${h.get("x-forwarded-proto") ?? "https"}://${h.get("x-forwarded-host") ?? h.get("host")}`;
+}
 
 type Result = { error?: string } | void;
 
@@ -116,6 +124,29 @@ export async function createPO(formData: FormData): Promise<Result> {
     .insert(parsed.items.map((i) => ({ ...i, po_id: po.id })));
   if (liErr) return { error: liErr.message };
 
+  await logActivity(supabase, po.id, profile.id, "submitted");
+
+  // Notify approvers (no-op unless RESEND_API_KEY is set).
+  const [{ data: full }, { data: approvers }] = await Promise.all([
+    supabase.from("purchase_orders").select("po_number, total").eq("id", po.id).single(),
+    supabase.from("profiles").select("email").in("role", ["approver", "admin"]).eq("disabled", false),
+  ]);
+  const origin = await siteOrigin();
+  await sendEmail(
+    (approvers ?? []).map((a) => a.email).filter((e) => e !== profile.email),
+    `New PO-${full?.po_number} from ${displayName(profile)} · ${parsed.row.pay_to} · ${formatMoney(Number(full?.total) || 0)}`,
+    emailLayout(
+      `PO-${full?.po_number} needs your review`,
+      [
+        `${displayName(profile)} submitted a purchase order for ${parsed.row.pay_to}.`,
+        `Department: ${parsed.row.department}. Total: ${formatMoney(Number(full?.total) || 0)}.`,
+        parsed.row.purpose ? `Purpose: ${parsed.row.purpose}` : "",
+      ].filter(Boolean),
+      `${origin}/po/${po.id}`,
+      "Review this PO"
+    )
+  );
+
   revalidatePath("/");
   redirect(`/po/${po.id}/submitted`);
 }
@@ -142,6 +173,8 @@ export async function updatePO(id: string, formData: FormData): Promise<Result> 
     .from("po_line_items")
     .insert(parsed.items.map((i) => ({ ...i, po_id: id })));
   if (liErr) return { error: liErr.message };
+
+  await logActivity(supabase, id, profile.id, "edited");
 
   revalidatePath("/");
   revalidatePath(`/po/${id}`);
@@ -181,7 +214,77 @@ export async function decidePO(formData: FormData) {
 
   if (error) redirect(`/po/${id}?error=${encodeURIComponent(error.message)}`);
 
+  await logActivity(supabase, id, profile.id, decision, notes || null);
+
+  const { data: po } = await supabase
+    .from("purchase_orders")
+    .select("po_number, pay_to, total, requester:profiles!purchase_orders_requester_id_fkey(email,full_name)")
+    .eq("id", id)
+    .single();
+  const requester = (po?.requester as unknown as { email: string; full_name: string | null } | null) ?? null;
+  if (requester) {
+    const origin = await siteOrigin();
+    await sendEmail(
+      [requester.email],
+      `PO-${po?.po_number} ${decision} · ${po?.pay_to}`,
+      emailLayout(
+        `Your PO-${po?.po_number} was ${decision}`,
+        [
+          `${displayName(profile)} ${decision} your purchase order for ${po?.pay_to} (${formatMoney(Number(po?.total) || 0)}).`,
+          notes ? `Note: ${notes}` : "",
+        ].filter(Boolean),
+        `${origin}/po/${id}`,
+        "View PO"
+      )
+    );
+  }
+
   revalidatePath("/approvals");
   revalidatePath(`/po/${id}`);
   redirect(`/po/${id}`);
+}
+
+export async function addComment(formData: FormData) {
+  const profile = await requireProfile();
+  const id = str(formData, "id");
+  const body = str(formData, "body").slice(0, 2000);
+  if (!id || !body) return;
+
+  const supabase = await createClient();
+  await logActivity(supabase, id, profile.id, "comment", body);
+
+  // Tell the other side: requester ↔ approvers.
+  const { data: po } = await supabase
+    .from("purchase_orders")
+    .select("po_number, pay_to, requester_id, requester:profiles!purchase_orders_requester_id_fkey(email)")
+    .eq("id", id)
+    .single();
+  if (po) {
+    const requesterEmail = (po.requester as unknown as { email: string } | null)?.email;
+    let to: string[] = [];
+    if (po.requester_id === profile.id) {
+      const { data: approvers } = await supabase
+        .from("profiles")
+        .select("email")
+        .in("role", ["approver", "admin"])
+        .eq("disabled", false);
+      to = (approvers ?? []).map((a) => a.email);
+    } else if (requesterEmail) {
+      to = [requesterEmail];
+    }
+    const origin = await siteOrigin();
+    await sendEmail(
+      to.filter((e) => e !== profile.email),
+      `Comment on PO-${po.po_number} · ${po.pay_to}`,
+      emailLayout(
+        `${displayName(profile)} commented on PO-${po.po_number}`,
+        [body],
+        `${origin}/po/${id}#activity`,
+        "Reply"
+      )
+    );
+  }
+
+  revalidatePath(`/po/${id}`);
+  redirect(`/po/${id}#activity`);
 }

@@ -31,17 +31,17 @@ export default async function SubmittedPage({ params }: { params: Promise<{ id: 
             <path d="M20 6 9 17l-5-5" />
           </svg>
         </div>
-        <h1 className="text-2xl font-semibold">Purchase order submitted</h1>
+        <h1 className="text-2xl font-semibold">Purchase Order Submitted</h1>
         <p className="text-slate-600 mt-2">
           <span className="font-medium text-slate-900">PO-{po.po_number}</span> is now waiting for an approver. You&apos;ll
           see its status under My POs.
         </p>
 
         <dl className="mt-6 rounded-lg border border-slate-200 bg-white p-5 text-left text-sm grid grid-cols-2 gap-x-4 gap-y-3">
-          <Item label="Pay to" value={po.pay_to} />
+          <Item label="Pay To" value={po.pay_to} />
           <Item label="Total" value={formatMoney(po.total)} />
           <Item label="Department" value={po.department} />
-          <Item label="Payment method" value={labelFor(PAYMENT_METHODS, po.payment_method)} />
+          <Item label="Payment Method" value={labelFor(PAYMENT_METHODS, po.payment_method)} />
           {po.project_name && <Item label="Project" value={po.project_name} />}
           <Item
             label="Receipt"
@@ -51,7 +51,8 @@ export default async function SubmittedPage({ params }: { params: Promise<{ id: 
 
         {po.receipt_status === "will_turn_in" && (
           <p className="mt-4 text-sm text-amber-900 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
-            Reminder: you chose to turn in the receipt. Please drop it off once you have it.
+            Reminder: you chose to turn in a receipt. Please be sure to write <span className="font-semibold">PO-{po.po_number}</span> on
+            the receipt before dropping it off.
           </p>
         )}
 
@@ -60,7 +61,7 @@ export default async function SubmittedPage({ params }: { params: Promise<{ id: 
             href="/"
             className="rounded-md bg-slate-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-slate-800"
           >
-            Start another PO
+            Start Another PO
           </Link>
           <Link
             href={`/po/${po.id}`}

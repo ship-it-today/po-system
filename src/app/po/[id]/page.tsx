@@ -2,10 +2,14 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import StatusBadge from "@/components/StatusBadge";
+import StatusStepper from "@/components/StatusStepper";
+import ActivityFeed from "@/components/ActivityFeed";
+import BudgetMeter from "@/components/BudgetMeter";
+import { departmentBudgetStatus } from "@/lib/budgets";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { CUSTOM_FIELDS, DELIVERY_OPTIONS, PAYMENT_METHODS, PAYMENT_TIMING, labelFor } from "@/lib/po-fields";
-import type { PurchaseOrder } from "@/lib/types";
+import type { Activity, PurchaseOrder } from "@/lib/types";
 import { canApprove, displayName, formatMoney } from "@/lib/types";
 import { decidePO, deletePO } from "../actions";
 
@@ -42,6 +46,17 @@ export default async function PODetailPage({
   const canEdit = isOwner && po.status === "pending";
   const canDecide = canApprove(profile.role) && po.status === "pending";
 
+  const year = new Date(po.created_at).getFullYear();
+  const [{ data: activityRows }, budget] = await Promise.all([
+    supabase
+      .from("po_activity")
+      .select("*, author:profiles(id,email,full_name)")
+      .eq("po_id", id)
+      .order("created_at"),
+    canApprove(profile.role) ? departmentBudgetStatus(supabase, po.department, year) : Promise.resolve(null),
+  ]);
+  const activity = (activityRows ?? []) as Activity[];
+
   const address = [po.vendor_street, [po.vendor_city, po.vendor_state].filter(Boolean).join(", "), po.vendor_zip]
     .filter(Boolean)
     .join("\n");
@@ -74,8 +89,18 @@ export default async function PODetailPage({
           <p className="text-sm text-slate-500">
             Submitted by {displayName(po.requester)} on {new Date(po.created_at).toLocaleString()}
           </p>
+          <div className="mt-3">
+            <StatusStepper status={po.status} decidedAt={po.decided_at} />
+          </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href={`/?from=${po.id}`}
+            className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm hover:bg-slate-50"
+            title="Start a new PO pre-filled from this one"
+          >
+            Duplicate
+          </Link>
           <Link
             href={`/po/${po.id}/print`}
             className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm hover:bg-slate-50"
@@ -121,24 +146,24 @@ export default async function PODetailPage({
           <Card title="Request">
             <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
               <Row label="Department" value={po.department} />
-              <Row label="Project name" value={po.project_name} />
-              <Row label="Payment needed" value={timing} />
-              <Row label="Payment method" value={labelFor(PAYMENT_METHODS, po.payment_method)} />
+              <Row label="Project Name" value={po.project_name} />
+              <Row label="Payment Needed" value={timing} />
+              <Row label="Payment Method" value={labelFor(PAYMENT_METHODS, po.payment_method)} />
               <Row label="Delivery" value={po.delivery ? labelFor(DELIVERY_OPTIONS, po.delivery) : null} />
             </dl>
           </Card>
 
-          <Card title="Pay to">
+          <Card title="Pay To">
             <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
-              <Row label="Pay to" value={po.pay_to} />
+              <Row label="Pay To" value={po.pay_to} />
               <Row label="Phone" value={po.vendor_phone} />
               <Row label="Address" value={address} wide />
             </dl>
           </Card>
 
-          <Card title="Purchase details">
+          <Card title="Purchase Details">
             <dl className="grid grid-cols-1 gap-y-3 text-sm mb-4">
-              <Row label="Purpose / description" value={po.purpose} wide />
+              <Row label="Purpose / Description" value={po.purpose} wide />
             </dl>
             <table className="min-w-full text-sm">
               <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
@@ -161,7 +186,7 @@ export default async function PODetailPage({
                   <td className="px-3 py-1.5 pt-3 text-right tabular-nums">{formatMoney(po.items_total)}</td>
                 </tr>
                 <tr>
-                  <td className="px-3 py-1.5 text-right text-slate-500">Other charges</td>
+                  <td className="px-3 py-1.5 text-right text-slate-500">Other Charges</td>
                   <td className="px-3 py-1.5 text-right tabular-nums">{formatMoney(po.other_charges)}</td>
                 </tr>
                 <tr>
@@ -170,7 +195,7 @@ export default async function PODetailPage({
                 </tr>
                 {po.not_to_exceed != null && (
                   <tr>
-                    <td className="px-3 py-1.5 text-right text-slate-500">Not to exceed</td>
+                    <td className="px-3 py-1.5 text-right text-slate-500">Not to Exceed</td>
                     <td className="px-3 py-1.5 text-right tabular-nums">{formatMoney(po.not_to_exceed)}</td>
                   </tr>
                 )}
@@ -178,9 +203,9 @@ export default async function PODetailPage({
             </table>
           </Card>
 
-          <Card title="Notes & receipt">
+          <Card title="Notes & Receipts">
             <dl className="grid grid-cols-1 gap-y-3 text-sm">
-              <Row label="Notes / instructions" value={po.notes} wide />
+              <Row label="Additional Notes / Special Instructions" value={po.notes} wide />
               <div>
                 <dt className="text-xs uppercase tracking-wide text-slate-500">Receipt</dt>
                 <dd className="mt-0.5">
@@ -191,7 +216,9 @@ export default async function PODetailPage({
                   ) : po.receipt_status === "uploaded" ? (
                     <span className="text-slate-500">Uploaded (file unavailable)</span>
                   ) : (
-                    <span className="text-amber-800">Requester will turn in the receipt</span>
+                    <span className="text-amber-800">
+                      Requester will turn in a receipt. Please write <span className="font-semibold">PO-{po.po_number}</span> on it.
+                    </span>
                   )}
                 </dd>
               </div>
@@ -202,15 +229,26 @@ export default async function PODetailPage({
               })}
             </dl>
           </Card>
+
+          <ActivityFeed poId={po.id} items={activity} />
         </section>
 
         <aside className="space-y-6">
+          {budget && (
+            <div className="rounded-lg border border-slate-200 bg-white p-5">
+              <h2 className="font-semibold mb-3">Department Budget</h2>
+              <BudgetMeter department={po.department} year={year} used={budget.used} budget={budget.budget} pendingAmount={budget.pending} />
+              {budget.budget != null && po.status === "pending" && budget.used + Number(po.total) > budget.budget && (
+                <p className="mt-2 text-xs text-red-700">Approving this would put {po.department} over its {year} budget.</p>
+              )}
+            </div>
+          )}
           {canDecide ? (
-            <form action={decidePO} className="rounded-lg border border-slate-200 bg-white p-5 space-y-3">
+            <form id="decision" action={decidePO} className="rounded-lg border border-slate-200 bg-white p-5 space-y-3 md:sticky md:top-4">
               <input type="hidden" name="id" value={po.id} />
               <h2 className="font-semibold">Decision</h2>
               <label className="block">
-                <span className="block text-xs font-medium text-slate-600 mb-1">Notes to requester</span>
+                <span className="block text-xs font-medium text-slate-600 mb-1">Notes to Requester</span>
                 <textarea
                   name="notes"
                   rows={4}
@@ -244,6 +282,17 @@ export default async function PODetailPage({
           )}
         </aside>
       </div>
+
+      {canDecide && (
+        <div className="md:hidden fixed inset-x-0 bottom-14 z-30 border-t border-slate-200 bg-white/95 backdrop-blur px-4 py-2 flex gap-2">
+          <a href="#decision" className="flex-1 rounded-md bg-emerald-600 px-3 py-2.5 text-center text-sm font-medium text-white">
+            Approve
+          </a>
+          <a href="#decision" className="flex-1 rounded-md bg-red-600 px-3 py-2.5 text-center text-sm font-medium text-white">
+            Deny
+          </a>
+        </div>
+      )}
     </AppShell>
   );
 }

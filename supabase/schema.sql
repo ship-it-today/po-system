@@ -238,3 +238,40 @@ create policy "receipts: owner deletes" on storage.objects
 -- ---------- Bootstrap: make yourself admin ----------
 -- After you sign in for the first time, run:
 --   update public.profiles set role = 'admin' where email = 'you@example.com';
+
+-- ---------- Activity & comments on a PO ----------
+create table public.po_activity (
+  id          uuid primary key default gen_random_uuid(),
+  po_id       uuid not null references public.purchase_orders(id) on delete cascade,
+  author_id   uuid references public.profiles(id),
+  kind        text not null check (kind in ('comment', 'submitted', 'edited', 'approved', 'denied')),
+  body        text,
+  created_at  timestamptz not null default now()
+);
+create index po_activity_po_idx on public.po_activity (po_id, created_at);
+alter table public.po_activity enable row level security;
+
+create policy "activity: read if PO visible" on public.po_activity
+  for select to authenticated
+  using (exists (select 1 from public.purchase_orders p
+                 where p.id = po_id and (p.requester_id = auth.uid() or public.is_approver())));
+
+create policy "activity: write own if PO visible" on public.po_activity
+  for insert to authenticated
+  with check (author_id = auth.uid()
+              and exists (select 1 from public.purchase_orders p
+                          where p.id = po_id and (p.requester_id = auth.uid() or public.is_approver())));
+
+-- ---------- Department budgets (per calendar year) ----------
+create table public.department_budgets (
+  department   text not null,
+  fiscal_year  integer not null,
+  amount       numeric(12,2) not null default 0 check (amount >= 0),
+  primary key (department, fiscal_year)
+);
+alter table public.department_budgets enable row level security;
+
+create policy "budgets: read" on public.department_budgets
+  for select to authenticated using (true);
+create policy "budgets: admin writes" on public.department_budgets
+  for all to authenticated using (public.is_admin()) with check (public.is_admin());

@@ -46,7 +46,7 @@ export default async function ApprovalsPage({ searchParams }: { searchParams: Pr
 
   return (
     <AppShell profile={profile}>
-      <h1 className="text-xl font-semibold mb-1">{isAdmin ? "All purchase orders" : "Approvals"}</h1>
+      <h1 className="text-xl font-semibold mb-1">{isAdmin ? "All Purchase Orders" : "Approvals"}</h1>
       <p className="text-sm text-slate-500 mb-4">
         {summary.pending.count} pending ({formatMoney(summary.pending.total)}) · {summary.approved.count} approved (
         {formatMoney(summary.approved.total)}) · {summary.denied.count} denied

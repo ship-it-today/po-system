@@ -79,3 +79,16 @@ export function displayName(p?: Pick<Profile, "email" | "full_name"> | null) {
   if (!p) return "—";
   return p.full_name || p.email;
 }
+
+export type ActivityKind = "comment" | "submitted" | "edited" | "approved" | "denied";
+export type Activity = {
+  id: string;
+  po_id: string;
+  author_id: string | null;
+  kind: ActivityKind;
+  body: string | null;
+  created_at: string;
+  author?: Pick<Profile, "id" | "email" | "full_name"> | null;
+};
+
+export type DepartmentBudget = { department: string; fiscal_year: number; amount: number };

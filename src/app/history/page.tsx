@@ -24,7 +24,7 @@ export default async function HistoryPage({ searchParams }: { searchParams: Prom
     <AppShell profile={profile}>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl font-semibold">My purchase orders</h1>
+          <h1 className="text-xl font-semibold">My Purchase Orders</h1>
           <p className="text-sm text-slate-500 mt-0.5">
             {counts.pending} pending · {counts.approved} approved · {counts.denied} denied
           </p>
@@ -33,7 +33,7 @@ export default async function HistoryPage({ searchParams }: { searchParams: Prom
           href="/"
           className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
         >
-          New purchase order
+          New Purchase Order
         </Link>
       </div>
       <POFilters basePath="/history" params={params} />

@@ -57,7 +57,7 @@ export default async function UsersPage({
   return (
     <AppShell profile={admin}>
       <div className="mb-6">
-        <h1 className="text-xl font-semibold">Users &amp; roles</h1>
+        <h1 className="text-xl font-semibold">Users &amp; Roles</h1>
         <p className="text-sm text-slate-500 mt-0.5">
           Requesters submit POs · Approvers review them · Admins manage users.
         </p>
@@ -73,7 +73,7 @@ export default async function UsersPage({
       )}
 
       <section className="rounded-lg border border-slate-200 bg-white p-6 mb-6">
-        <h2 className="font-semibold mb-1">Invite someone</h2>
+        <h2 className="font-semibold mb-1">Invite Someone</h2>
         {adminInvitesEnabled() ? (
           <>
             <p className="text-sm text-slate-500 mb-4">

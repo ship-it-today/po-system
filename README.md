@@ -109,6 +109,20 @@ That's it — the "Continue with Google" button on the login page starts working
 
 ---
 
+## Email notifications (optional)
+
+Approvers get an email when a PO is submitted, requesters when it's approved or denied, and each side when the other comments. To turn this on:
+
+1. Create a free account at resend.com → **API Keys → Create** → copy the key.
+2. Under **Domains**, add and verify your church's domain (DNS records), or skip this and test with the built-in `onboarding@resend.dev` sender (delivers only to your own Resend account email).
+3. Vercel → Settings → Environment Variables → add `RESEND_API_KEY` (the key) and `EMAIL_FROM` (e.g. `Purchase Orders <po@yourchurch.org>`), then Redeploy.
+
+Without the key, the app works exactly the same, just silently.
+
+## Department budgets
+
+Admins set annual budgets per department under **Budgets** in the nav (one number per department per calendar year). Approvers then see a used-vs-budget meter on every PO, with a warning when approving would exceed the budget, and Reports shows all departments side by side. Leave a department blank to skip tracking it.
+
 ## Customizing the form
 
 | What | Where |
@@ -154,5 +168,8 @@ src/app/account            account info, display name, password change
 src/app/po/[id]            PO detail + approve/deny
 src/app/po/[id]/edit       edit a pending PO
 src/app/approvals          approver queue ("All POs" for admins)
-src/app/admin/users        role management
+src/app/admin/users        role management, invites, remove/delete
+src/app/admin/budgets      department budgets
+src/app/reports            trends, KPIs, budget vs spend, CSV export
+src/lib/notify.ts          email notifications (Resend)
 ```

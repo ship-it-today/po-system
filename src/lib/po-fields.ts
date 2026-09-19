@@ -31,26 +31,26 @@ export const DEPARTMENTS = [
 ] as const;
 
 export const PAYMENT_TIMING = [
-  { value: "next_run", label: "Next check run" },
+  { value: "next_run", label: "Next Check Run" },
   { value: "asap", label: "ASAP" },
-  { value: "by_date", label: "Need by date" },
+  { value: "by_date", label: "Need by Date" },
 ] as const;
 
 export const PAYMENT_METHODS = [
-  { value: "check_request", label: "Check request" },
-  { value: "credit_card", label: "Church credit card" },
-  { value: "on_account", label: "On account" },
+  { value: "check_request", label: "Check Request" },
+  { value: "credit_card", label: "Church Credit Card" },
+  { value: "on_account", label: "On Account" },
 ] as const;
 
 /** Shown under Payment method. */
 export const DELIVERY_OPTIONS = [
-  { value: "mail", label: "Mail for me" },
-  { value: "mailbox", label: "Return to my mailbox" },
+  { value: "mail", label: "Mail for Me" },
+  { value: "mailbox", label: "Return to My Mailbox" },
 ] as const;
 
 export const RECEIPT_STATUS = [
-  { value: "uploaded", label: "Receipt attached" },
-  { value: "will_turn_in", label: "I will turn in the receipt" },
+  { value: "uploaded", label: "Receipt Attached" },
+  { value: "will_turn_in", label: "I Will Turn in a Receipt" },
 ] as const;
 
 export const US_STATES = [
