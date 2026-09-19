@@ -13,6 +13,7 @@ create table public.profiles (
   email       text not null,
   full_name   text,
   role        public.user_role not null default 'requester',
+  disabled    boolean not null default false,   -- access removed by an admin
   created_at  timestamptz not null default now()
 );
 
@@ -63,7 +64,7 @@ create table public.purchase_orders (
 
   -- 1–3
   department      text not null,
-  project_name    text not null,
+  project_name    text,
   payment_timing  text not null default 'next_run'
                   check (payment_timing in ('next_run', 'asap', 'by_date')),
   needed_by       date,
@@ -79,6 +80,8 @@ create table public.purchase_orders (
   -- 7–8
   payment_method  text not null
                   check (payment_method in ('check_request', 'credit_card', 'on_account')),
+  delivery        text
+                  check (delivery in ('mail', 'mailbox')),   -- how to hand over the check/card
   purpose         text,
 
   -- 9–10  Amounts. items_total is maintained by trigger from po_line_items.

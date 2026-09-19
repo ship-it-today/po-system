@@ -3,12 +3,14 @@ export type POStatus = "pending" | "approved" | "denied";
 export type PaymentTiming = "next_run" | "asap" | "by_date";
 export type PaymentMethod = "check_request" | "credit_card" | "on_account";
 export type ReceiptStatus = "uploaded" | "will_turn_in";
+export type Delivery = "mail" | "mailbox";
 
 export type Profile = {
   id: string;
   email: string;
   full_name: string | null;
   role: Role;
+  disabled?: boolean;
   created_at: string;
 };
 
@@ -37,6 +39,7 @@ export type PurchaseOrder = {
   vendor_phone: string | null;
 
   payment_method: PaymentMethod;
+  delivery: Delivery | null;
   purpose: string | null;
 
   not_to_exceed: number | null;

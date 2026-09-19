@@ -80,3 +80,63 @@ export async function resendInvite(formData: FormData) {
   if (error) back({ error: error.message });
   back({ saved: `Invitation re-sent to ${email}.` });
 }
+
+async function adminOrBack() {
+  const admin = createAdminClient();
+  if (!admin) back({ error: "User management needs SUPABASE_SECRET_KEY on Vercel (see README)." });
+  return admin;
+}
+
+/** Revoke access: user can no longer sign in; their POs and history are kept. */
+export async function removeUser(formData: FormData) {
+  const me = await requireRole(["admin"]);
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+  if (id === me.id) back({ error: "You can't remove your own access." });
+  const admin = await adminOrBack();
+
+  const { error: banErr } = await admin.auth.admin.updateUserById(id, { ban_duration: "876000h" }); // ~100 years
+  if (banErr) back({ error: banErr.message });
+  const { error } = await admin.from("profiles").update({ disabled: true }).eq("id", id);
+  if (error) back({ error: error.message });
+
+  revalidatePath("/admin/users");
+  back({ saved: "Access removed. Their purchase orders are kept." });
+}
+
+export async function restoreUser(formData: FormData) {
+  await requireRole(["admin"]);
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+  const admin = await adminOrBack();
+
+  const { error: banErr } = await admin.auth.admin.updateUserById(id, { ban_duration: "none" });
+  if (banErr) back({ error: banErr.message });
+  const { error } = await admin.from("profiles").update({ disabled: false }).eq("id", id);
+  if (error) back({ error: error.message });
+
+  revalidatePath("/admin/users");
+  back({ saved: "Access restored." });
+}
+
+/** Permanently delete. Only allowed when the user has no purchase orders. */
+export async function deleteUser(formData: FormData) {
+  const me = await requireRole(["admin"]);
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+  if (id === me.id) back({ error: "You can't delete yourself." });
+  const admin = await adminOrBack();
+
+  const { count } = await admin
+    .from("purchase_orders")
+    .select("id", { count: "exact", head: true })
+    .or(`requester_id.eq.${id},approver_id.eq.${id}`);
+  if ((count ?? 0) > 0)
+    back({ error: "This person has purchase orders on record. Use “Remove access” instead so history is kept." });
+
+  const { error } = await admin.auth.admin.deleteUser(id);
+  if (error) back({ error: error.message });
+
+  revalidatePath("/admin/users");
+  back({ saved: "User deleted." });
+}

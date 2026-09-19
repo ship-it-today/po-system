@@ -4,7 +4,7 @@ import AppShell from "@/components/AppShell";
 import StatusBadge from "@/components/StatusBadge";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { CUSTOM_FIELDS, PAYMENT_METHODS, PAYMENT_TIMING, labelFor } from "@/lib/po-fields";
+import { CUSTOM_FIELDS, DELIVERY_OPTIONS, PAYMENT_METHODS, PAYMENT_TIMING, labelFor } from "@/lib/po-fields";
 import type { PurchaseOrder } from "@/lib/types";
 import { canApprove, displayName, formatMoney } from "@/lib/types";
 import { decidePO, deletePO } from "../actions";
@@ -124,6 +124,7 @@ export default async function PODetailPage({
               <Row label="Project name" value={po.project_name} />
               <Row label="Payment needed" value={timing} />
               <Row label="Payment method" value={labelFor(PAYMENT_METHODS, po.payment_method)} />
+              <Row label="Delivery" value={po.delivery ? labelFor(DELIVERY_OPTIONS, po.delivery) : null} />
             </dl>
           </Card>
 

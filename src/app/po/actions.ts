@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile, requireRole } from "@/lib/auth";
-import { CUSTOM_FIELDS, DEPARTMENTS, PAYMENT_METHODS, PAYMENT_TIMING } from "@/lib/po-fields";
+import { CUSTOM_FIELDS, DELIVERY_OPTIONS, DEPARTMENTS, PAYMENT_METHODS, PAYMENT_TIMING } from "@/lib/po-fields";
 import type { LineItem } from "@/lib/types";
 
 type Result = { error?: string } | void;
@@ -32,6 +32,10 @@ function parseForm(formData: FormData) {
 
   const payment_method = str(formData, "payment_method");
   if (!PAYMENT_METHODS.some((o) => o.value === payment_method)) return { error: "Please choose a payment method." } as const;
+
+  const deliveryRaw = optStr(formData, "delivery");
+  if (deliveryRaw && !DELIVERY_OPTIONS.some((o) => o.value === deliveryRaw)) return { error: "Invalid delivery option." } as const;
+  const delivery = deliveryRaw;
 
   const purpose = str(formData, "purpose");
   if (!purpose) return { error: "Purpose / description is required." } as const;
@@ -81,6 +85,7 @@ function parseForm(formData: FormData) {
       vendor_zip: optStr(formData, "vendor_zip"),
       vendor_phone: optStr(formData, "vendor_phone"),
       payment_method,
+      delivery,
       purpose,
       not_to_exceed,
       other_charges,

@@ -22,7 +22,13 @@ export async function requireProfile(): Promise<Profile> {
     redirect(`/login?error=${encodeURIComponent("Database not set up: " + error.message)}`);
   }
 
-  if (profile) return profile as Profile;
+  if (profile) {
+    if ((profile as Profile).disabled) {
+      await supabase.auth.signOut();
+      redirect(`/login?error=${encodeURIComponent("Your access has been removed. Contact an admin.")}`);
+    }
+    return profile as Profile;
+  }
 
   // No profile row (user was created before the schema/trigger existed). Create one now.
   const meta = (user.user_metadata ?? {}) as Record<string, unknown>;

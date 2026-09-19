@@ -74,7 +74,9 @@ The **Users** page has an *Invite someone* form. To turn it on, the app needs yo
 3. **Deployments → ⋯ → Redeploy** so the new variable is picked up.
 4. Supabase → **Authentication → URL Configuration** → make sure your Vercel URL with `/**` is in **Redirect URLs** (e.g. `https://po-system-woad.vercel.app/**`). Invite links won't work without this.
 
-Invited people get an email, click the link, land on their Account page to set a password, and show as *Invited* on the Users page until they've signed in (with a *Resend* link). You can pick their role at invite time.
+Invited people get an email, click the link, land on their Account page to set a password, and show as *Invite pending* on the Users page until they've signed in (with a *Resend invite* button). You can pick their role at invite time. Once they sign in they show as *Active* with their last sign-in date.
+
+The same key enables **Remove access** (blocks sign-in, keeps their POs, reversible with *Restore*) and **Delete** (permanent; only offered for people with no purchase orders on record).
 
 Without the secret key the form is replaced by a link to the Supabase dashboard, where **Authentication → Users → Invite user** does the same thing.
 

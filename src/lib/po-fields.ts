@@ -42,6 +42,12 @@ export const PAYMENT_METHODS = [
   { value: "on_account", label: "On account" },
 ] as const;
 
+/** Shown under Payment method. */
+export const DELIVERY_OPTIONS = [
+  { value: "mail", label: "Mail for me" },
+  { value: "mailbox", label: "Return to my mailbox" },
+] as const;
+
 export const RECEIPT_STATUS = [
   { value: "uploaded", label: "Receipt attached" },
   { value: "will_turn_in", label: "I will turn in the receipt" },

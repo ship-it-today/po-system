@@ -7,6 +7,7 @@ import {
   DEPARTMENTS,
   PAYMENT_METHODS,
   PAYMENT_TIMING,
+  DELIVERY_OPTIONS,
   US_STATES,
   type FieldDef,
 } from "@/lib/po-fields";
@@ -170,6 +171,23 @@ export default function POForm({ initial, onSubmit }: Props) {
                       value={o.value}
                       required
                       defaultChecked={initial?.payment_method === o.value}
+                    />
+                    {o.label}
+                  </label>
+                ))}
+              </div>
+            </Field>
+          </div>
+          <div className="sm:col-span-6">
+            <Field label="Delivery">
+              <div className="flex flex-wrap gap-x-4 gap-y-2 pt-1.5 text-sm">
+                {DELIVERY_OPTIONS.map((o) => (
+                  <label key={o.value} className="flex items-center gap-1.5">
+                    <input
+                      type="radio"
+                      name="delivery"
+                      value={o.value}
+                      defaultChecked={initial?.delivery === o.value}
                     />
                     {o.label}
                   </label>

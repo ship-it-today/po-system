@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { ORG_NAME, PAYMENT_METHODS, PAYMENT_TIMING, labelFor } from "@/lib/po-fields";
+import { DELIVERY_OPTIONS, ORG_NAME, PAYMENT_METHODS, PAYMENT_TIMING, labelFor } from "@/lib/po-fields";
 import type { PurchaseOrder } from "@/lib/types";
 import { displayName, formatMoney } from "@/lib/types";
 import PrintButton from "./PrintButton";
@@ -69,6 +69,7 @@ export default async function PrintPOPage({ params }: { params: Promise<{ id: st
             <Row label="Project" value={po.project_name} />
             <Row label="Payment needed" value={timing} />
             <Row label="Payment method" value={labelFor(PAYMENT_METHODS, po.payment_method)} />
+            <Row label="Delivery" value={po.delivery ? labelFor(DELIVERY_OPTIONS, po.delivery) : null} />
           </section>
           <section>
             <h2 className="text-xs font-bold uppercase tracking-wide text-slate-500 border-b border-slate-300 pb-1 mb-2">
