@@ -19,14 +19,14 @@ export default function AppShell({
               Purchase Orders
             </Link>
             <Link href="/" className="text-slate-600 hover:text-slate-900">
-              My POs
-            </Link>
-            <Link href="/po/new" className="text-slate-600 hover:text-slate-900">
               New PO
+            </Link>
+            <Link href="/history" className="text-slate-600 hover:text-slate-900">
+              My POs
             </Link>
             {canApprove(profile.role) && (
               <Link href="/approvals" className="text-slate-600 hover:text-slate-900">
-                Approvals
+                {profile.role === "admin" ? "All POs" : "Approvals"}
               </Link>
             )}
             {profile.role === "admin" && (
@@ -36,12 +36,15 @@ export default function AppShell({
             )}
           </nav>
           <div className="flex items-center gap-3 text-sm">
-            <span className="text-slate-600 hidden sm:inline">
+            <Link href="/account" className="text-slate-600 hover:text-slate-900 hidden sm:inline">
               {displayName(profile)}
               <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600 capitalize">
                 {profile.role}
               </span>
-            </span>
+            </Link>
+            <Link href="/account" className="text-slate-600 hover:text-slate-900 sm:hidden">
+              Account
+            </Link>
             <form action={signOut}>
               <button className="text-slate-500 hover:text-slate-900">Sign out</button>
             </form>

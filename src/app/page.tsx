@@ -1,11 +1,11 @@
 import Link from "next/link";
 import AppShell from "@/components/AppShell";
-import POTable from "@/components/POTable";
+import POForm from "@/components/POForm";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import type { PurchaseOrder } from "@/lib/types";
+import { createPO } from "./po/actions";
 
-export default async function MyPOsPage({
+export default async function HomePage({
   searchParams,
 }: {
   searchParams: Promise<{ error?: string }>;
@@ -14,18 +14,11 @@ export default async function MyPOsPage({
   const { error } = await searchParams;
   const supabase = await createClient();
 
-  const { data } = await supabase
+  const { count: pendingCount } = await supabase
     .from("purchase_orders")
-    .select("*")
+    .select("id", { count: "exact", head: true })
     .eq("requester_id", profile.id)
-    .order("created_at", { ascending: false });
-
-  const orders = (data ?? []) as PurchaseOrder[];
-  const counts = {
-    pending: orders.filter((o) => o.status === "pending").length,
-    approved: orders.filter((o) => o.status === "approved").length,
-    denied: orders.filter((o) => o.status === "denied").length,
-  };
+    .eq("status", "pending");
 
   return (
     <AppShell profile={profile}>
@@ -34,21 +27,18 @@ export default async function MyPOsPage({
           You don&apos;t have access to that page.
         </p>
       )}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-wrap items-end justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-xl font-semibold">My purchase orders</h1>
+          <h1 className="text-xl font-semibold">New purchase order</h1>
           <p className="text-sm text-slate-500 mt-0.5">
-            {counts.pending} pending · {counts.approved} approved · {counts.denied} denied
+            Fill out the form below and submit it for approval.
           </p>
         </div>
-        <Link
-          href="/po/new"
-          className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
-        >
-          New purchase order
+        <Link href="/history" className="text-sm text-slate-700 underline hover:text-slate-900">
+          View my PO history{pendingCount ? ` (${pendingCount} pending)` : ""}
         </Link>
       </div>
-      <POTable orders={orders} emptyText="You haven't submitted any purchase orders yet." />
+      <POForm onSubmit={createPO} />
     </AppShell>
   );
 }
