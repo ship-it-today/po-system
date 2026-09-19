@@ -58,13 +58,13 @@ export default function ReportControls({
           {fmt(params.from)} – {fmt(toInclusive)}
         </span>
 
-        <span className="inline-flex items-center gap-1.5">
+        <span className="inline-flex flex-wrap items-center gap-1.5 max-w-full">
           <span className="text-slate-500 whitespace-nowrap">Group by</span>
           <span className="inline-flex rounded-md border border-slate-300 bg-white overflow-hidden">
             {(Object.keys(UNITS) as Unit[]).map((u) => {
               const ok = allowed.includes(u);
               const active = params.unit === u;
-              const cls = `px-2.5 py-1 text-xs ${active ? "bg-slate-900 text-white" : ok ? "text-slate-700 hover:bg-slate-50" : "text-slate-300 cursor-not-allowed"}`;
+              const cls = `inline-flex items-center min-h-10 md:min-h-0 px-2 sm:px-2.5 py-1.5 sm:py-1 text-xs ${active ? "bg-slate-900 text-white" : ok ? "text-slate-700 hover:bg-slate-50" : "text-slate-300 cursor-not-allowed"}`;
               return ok ? (
                 <Link key={u} href={`/reports${reportQuery(params, { unit: u })}`} className={cls}>
                   {UNITS[u]}
@@ -81,7 +81,7 @@ export default function ReportControls({
 
         <Link
           href={`/reports${reportQuery(params, { compare: params.compare ? "" : "1" })}`}
-          className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs ${
+          className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 min-h-10 md:min-h-0 text-xs ${
             params.compare ? "border-slate-900 bg-slate-900 text-white" : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
           }`}
         >

@@ -225,12 +225,21 @@ export function aggregate(rows: ReportRow[], buckets: Bucket[]) {
   const byMethod = new Map<string, { amount: number; count: number }>();
   const totals: Totals = { approved: 0, denied: 0, pending: 0, approvedCount: 0, deniedCount: 0, pendingCount: 0 };
 
-  let bi = 0;
+  const first = buckets[0]?.start.getTime() ?? 0;
+  const last = buckets[buckets.length - 1]?.end.getTime() ?? 0;
   for (const r of rows) {
     const t = new Date(r.created_at).getTime();
-    while (bi < buckets.length && t >= buckets[bi].end.getTime()) bi++;
-    const b = buckets[bi];
-    if (!b || t < b.start.getTime()) continue;
+    if (t < first || t >= last) continue;
+    // Order-independent lookup (buckets are contiguous and sorted).
+    let lo = 0, hi = buckets.length - 1, idx = -1;
+    while (lo <= hi) {
+      const mid = (lo + hi) >> 1;
+      if (t < buckets[mid].start.getTime()) hi = mid - 1;
+      else if (t >= buckets[mid].end.getTime()) lo = mid + 1;
+      else { idx = mid; break; }
+    }
+    if (idx < 0) continue;
+    const b = buckets[idx];
     const amt = Number(r.total) || 0;
     b[r.status] += amt;
     b[`${r.status}Count`] += 1;

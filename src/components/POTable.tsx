@@ -144,7 +144,7 @@ function PageLink({
   current?: boolean;
   children: React.ReactNode;
 }) {
-  const cls = `rounded-md px-3 py-2 md:py-1 text-sm ${
+  const cls = `inline-flex items-center rounded-md px-3 py-2 md:py-1 min-h-10 md:min-h-0 text-sm ${
     current ? "bg-slate-900 text-white" : disabled ? "text-slate-300" : "text-slate-700 hover:bg-slate-100"
   }`;
   if (disabled || current) return <span className={cls}>{children}</span>;
