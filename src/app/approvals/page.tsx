@@ -10,22 +10,17 @@ import BulkForm from "@/components/BulkForm";
 import { trashPOs } from "@/app/admin/trash/actions";
 
 const TABS: { key: POStatus | ""; label: string }[] = [
+  { key: "", label: "All" },
   { key: "pending", label: "Pending" },
   { key: "approved", label: "Approved" },
   { key: "denied", label: "Denied" },
-  { key: "", label: "All" },
 ];
 
 export default async function ApprovalsPage({ searchParams }: { searchParams: Promise<RawSearchParams> }) {
   const profile = await requireRole(["approver", "admin"]);
   const raw = await searchParams;
-  // Default to the pending queue, oldest first, unless the URL says otherwise.
-  const hasStatusParam = "status" in raw;
-  const params = parseListParams(raw, {
-    status: hasStatusParam ? "" : "pending",
-    sort: "created_at",
-    dir: !hasStatusParam || raw.status === "pending" ? "asc" : "desc",
-  });
+  // Default: every PO, newest first. Tabs narrow by status.
+  const params = parseListParams(raw, { status: "", sort: "created_at", dir: "desc" });
   const supabase = await createClient();
 
   const [{ rows, total }, { data: allRows }, { data: people }] = await Promise.all([
@@ -71,7 +66,7 @@ export default async function ApprovalsPage({ searchParams }: { searchParams: Pr
         {TABS.map((t) => (
           <Link
             key={t.key || "all"}
-            href={`/approvals?status=${t.key}`}
+            href={t.key ? `/approvals?status=${t.key}` : "/approvals"}
             className={`px-3 py-2 text-sm -mb-px border-b-2 ${
               params.status === t.key
                 ? "border-slate-900 text-slate-900 font-medium"
@@ -88,7 +83,7 @@ export default async function ApprovalsPage({ searchParams }: { searchParams: Pr
           {saved} <Link href="/admin/trash" className="underline">Open Trash</Link>
         </p>
       )}
-      <POFilters basePath="/approvals" params={params} requesters={requesters} />
+      <POFilters basePath="/approvals" params={params} requesters={requesters} showStatus={false} />
       {isAdmin ? (
         <BulkForm
           returnTo={returnTo}

@@ -106,7 +106,7 @@ export type RawSP = Record<string, string | string[] | undefined>;
 const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
 
 export function parseReportParams(sp: RawSP, now: Date, earliest: Date | null, departments: readonly string[]): ReportParams {
-  let preset = (first(sp.preset) in PRESETS ? first(sp.preset) : "last_12m") as PresetKey;
+  const preset = (first(sp.preset) in PRESETS ? first(sp.preset) : "last_12m") as PresetKey;
   let { from, to } = presetRange(preset, now, earliest);
 
   if (preset === "custom") {
@@ -116,8 +116,8 @@ export function parseReportParams(sp: RawSP, now: Date, earliest: Date | null, d
       from = f;
       to = addUnit(t, "day", 1); // inclusive end date in the UI
     } else {
-      preset = "last_12m";
-      ({ from, to } = presetRange(preset, now, earliest));
+      // "Custom" just chosen, no dates yet: keep the current range so the date pickers start from it.
+      ({ from, to } = presetRange("last_12m", now, earliest));
     }
   }
 

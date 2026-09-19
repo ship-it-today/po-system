@@ -6,8 +6,13 @@ import AutoSubmitForm from "./AutoSubmitForm";
 import { DEPARTMENTS } from "@/lib/po-fields";
 import type { ListParams } from "@/lib/po-query";
 
-const inputCls = "rounded-md border border-slate-300 px-2.5 py-1.5 text-sm bg-white";
+const ctl = "h-10 md:h-9 rounded-md border border-slate-300 bg-white px-2.5 text-sm text-slate-900 w-full md:w-auto";
 
+/**
+ * One tidy row of filters; every change applies instantly.
+ * Search · Department · Requester · From – To · Clear
+ * On phones the search stays visible and the rest folds behind a "Filters" button.
+ */
 export default function POFilters({
   basePath,
   params,
@@ -18,42 +23,43 @@ export default function POFilters({
   params: ListParams;
   /** When provided, shows a Requester dropdown (approver/admin views). */
   requesters?: { id: string; label: string }[];
+  /** Status dropdown — turn off on pages that already have status tabs. */
   showStatus?: boolean;
 }) {
-  const active = Boolean(params.q || params.status || params.department || params.requester || params.from || params.to);
-  const activeCount = [params.status, params.department, params.requester, params.from, params.to].filter(Boolean).length;
+  const activeCount = [showStatus && params.status, params.department, params.requester, params.from, params.to].filter(Boolean).length;
+  const active = Boolean(params.q) || activeCount > 0;
   const [open, setOpen] = useState(activeCount > 0);
+  // Keep the tab's status in the URL when it isn't an editable filter here.
+  const carryStatus = !showStatus && params.status;
 
   return (
     <AutoSubmitForm action={basePath} className="mb-4 data-[pending]:opacity-70">
+      {carryStatus && <input type="hidden" name="status" value={params.status} />}
 
-      <div className="flex items-end gap-2">
-        <label className="flex flex-1 md:flex-none flex-col gap-1 text-xs text-slate-600">
-          Search
+      <div className="flex flex-col gap-2 md:flex-row md:flex-wrap md:items-center">
+        <div className="flex gap-2">
           <input
             name="q"
             type="search"
             defaultValue={params.q}
-            placeholder="PO #, payee, project, purpose"
-            className={`${inputCls} w-full md:w-56`}
+            placeholder="Search POs…"
+            aria-label="Search"
+            className={`${ctl} flex-1 md:w-64`}
           />
-        </label>
-        <button
-          type="button"
-          onClick={() => setOpen((o) => !o)}
-          aria-expanded={open}
-          className={`${inputCls} md:hidden inline-flex items-center gap-1.5 ${open ? "border-slate-900" : ""}`}
-        >
-          Filters
-          {activeCount > 0 && <span className="rounded-full bg-slate-900 px-1.5 text-[11px] text-white">{activeCount}</span>}
-        </button>
-      </div>
+          <button
+            type="button"
+            onClick={() => setOpen((o) => !o)}
+            aria-expanded={open}
+            className={`${ctl} md:hidden w-auto inline-flex items-center gap-1.5 ${open ? "border-slate-900" : ""}`}
+          >
+            Filters
+            {activeCount > 0 && <span className="rounded-full bg-slate-900 px-1.5 text-[11px] text-white">{activeCount}</span>}
+          </button>
+        </div>
 
-      <div className={`mt-2 ${open ? "grid grid-cols-2 gap-2" : "hidden"} md:flex md:flex-wrap md:items-end md:gap-2`}>
-        {/* Sort: a select on phones (no column headers there); on desktop it just carries the header-chosen sort along. */}
-        <label className="flex flex-col gap-1 text-xs text-slate-600 md:hidden">
-          Sort
-          <select name="sortdir" defaultValue={`${params.sort}:${params.dir}`} className={`${inputCls} w-full`}>
+        <div className={`${open ? "flex" : "hidden"} flex-col gap-2 md:flex md:flex-row md:flex-wrap md:items-center`}>
+          {/* Sort: only needed on phones (desktop has sortable column headers). */}
+          <select name="sortdir" defaultValue={`${params.sort}:${params.dir}`} aria-label="Sort" className={`${ctl} md:hidden`}>
             <option value="created_at:desc">Newest first</option>
             <option value="created_at:asc">Oldest first</option>
             <option value="total:desc">Highest amount</option>
@@ -63,58 +69,46 @@ export default function POFilters({
             <option value="pay_to:asc">Pay To (A–Z)</option>
             <option value="status:asc">Status</option>
           </select>
-        </label>
 
-      {showStatus && (
-        <label className="flex flex-col gap-1 text-xs text-slate-600">
-          Status
-          <select name="status" defaultValue={params.status} className={`${inputCls} w-full md:w-auto`}>
-            <option value="">Any</option>
-            <option value="pending">Pending</option>
-            <option value="approved">Approved</option>
-            <option value="denied">Denied</option>
-          </select>
-        </label>
-      )}
+          {showStatus && (
+            <select name="status" defaultValue={params.status} aria-label="Status" className={ctl}>
+              <option value="">All statuses</option>
+              <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+              <option value="denied">Denied</option>
+            </select>
+          )}
 
-      <label className="flex flex-col gap-1 text-xs text-slate-600">
-        Department
-        <select name="department" defaultValue={params.department} className={`${inputCls} w-full md:w-auto`}>
-          <option value="">Any</option>
-          {DEPARTMENTS.map((d) => (
-            <option key={d}>{d}</option>
-          ))}
-        </select>
-      </label>
-
-      {requesters && (
-        <label className="flex flex-col gap-1 text-xs text-slate-600">
-          Requester
-          <select name="requester" defaultValue={params.requester} className={`${inputCls} w-full md:w-auto`}>
-            <option value="">Anyone</option>
-            {requesters.map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.label}
-              </option>
+          <select name="department" defaultValue={params.department} aria-label="Department" className={`${ctl} md:max-w-[11rem]`}>
+            <option value="">All departments</option>
+            {DEPARTMENTS.map((d) => (
+              <option key={d}>{d}</option>
             ))}
           </select>
-        </label>
-      )}
 
-      <label className="flex flex-col gap-1 text-xs text-slate-600">
-        From
-        <input name="from" type="date" defaultValue={params.from} className={`${inputCls} w-full md:w-auto`} />
-      </label>
-      <label className="flex flex-col gap-1 text-xs text-slate-600">
-        To
-        <input name="to" type="date" defaultValue={params.to} className={`${inputCls} w-full md:w-auto`} />
-      </label>
+          {requesters && (
+            <select name="requester" defaultValue={params.requester} aria-label="Requester" className={`${ctl} md:max-w-[11rem]`}>
+              <option value="">All requesters</option>
+              {requesters.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.label}
+                </option>
+              ))}
+            </select>
+          )}
 
-      {active && (
-        <Link href={basePath} className="px-2 py-1.5 text-sm text-slate-500 hover:text-slate-900">
-          Clear
-        </Link>
-      )}
+          <div className="flex items-center gap-1.5">
+            <input name="from" type="date" defaultValue={params.from} max={params.to || undefined} aria-label="From date" className={`${ctl} min-w-0 flex-1 md:flex-none`} />
+            <span className="text-slate-400">–</span>
+            <input name="to" type="date" defaultValue={params.to} min={params.from || undefined} aria-label="To date" className={`${ctl} min-w-0 flex-1 md:flex-none`} />
+          </div>
+
+          {active && (
+            <Link href={carryStatus ? `${basePath}?status=${params.status}` : basePath} className="px-1 py-1.5 text-sm text-slate-500 hover:text-slate-900">
+              Clear
+            </Link>
+          )}
+        </div>
       </div>
     </AutoSubmitForm>
   );

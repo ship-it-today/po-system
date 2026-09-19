@@ -4,7 +4,6 @@ import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { PAYMENT_METHODS, labelFor } from "@/lib/po-fields";
 import {
-  PRESETS,
   UNITS,
   addUnit,
   aggregate,
@@ -107,7 +106,7 @@ export default async function ReportsPage({
         <div>
           <h1 className="text-xl font-semibold">Reports</h1>
           <p className="text-sm text-slate-500 mt-0.5">
-            {PRESETS[params.preset]} · by {UNITS[params.unit].toLowerCase()} · grouped by the date each PO was submitted
+            {fmtRange(params.from)} – {fmtRange(addUnit(params.to, "day", -1))} · by {UNITS[params.unit].toLowerCase()}, based on submit date
             {params.compare && ` · vs ${fmtRange(prevFrom)} – ${fmtRange(addUnit(params.from, "day", -1))}`}
           </p>
         </div>
